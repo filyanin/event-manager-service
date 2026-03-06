@@ -5,7 +5,7 @@
         public static IServiceCollection AddPresentation(this IServiceCollection services)
         {
 
-            services.AddConnections();
+            services.AddControllers();
             services.AddSwaggerGen();
 
             return services;

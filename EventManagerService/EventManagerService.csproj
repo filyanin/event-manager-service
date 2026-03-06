@@ -7,11 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Domain\Models\" />
     <Folder Include="Infrastructure\" />
     <Folder Include="Application\" />
-    <Folder Include="Presentation\Controllers\" />
-    <Folder Include="Presentation\DTOs\" />
+    <Folder Include="Presentation\Validators\" />
   </ItemGroup>
 
   <ItemGroup>
