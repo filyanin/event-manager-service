@@ -1,17 +1,57 @@
-﻿namespace EventManagerService.Domain.Models
+﻿using System.Data.Common;
+
+namespace EventManagerService.Domain.Models
 {
     public class Event
     {
-        public required Guid Id { get; set; }
+        private const int _minTitleLength = 6;
+        public Guid Id { get; private set; }
 
-        public required string Title { get; set; }
+        public string Title { get; private set; }
 
-        public string? Description { get; set; }
+        public string? Description { get; private set; }
 
-        public required DateTime StartAt {  get; set; }
+        public  DateTime StartAt {  get; private set; }
 
-        public required DateTime EndAt { get; set; }
+        public DateTime EndAt { get; private set; }
+
+        private Event(string title, DateTime startAt, DateTime endAt, string? description = null)
+        {
+            Id = Guid.NewGuid();
+            Title = title;
+            Description = description;
+            StartAt = startAt;
+            EndAt = endAt;
+        }
+        public static Event Create(string title, DateTime startAt, DateTime endAt, string? description = null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(title);
+
+            if (title.Length < _minTitleLength)
+                throw new ArgumentException($"Title must be at least {_minTitleLength}");
+
+            if (startAt >= endAt)
+                throw new ArgumentException($"End date {endAt} must be latest then start date {startAt}");
+                
+            return new Event(title, startAt,endAt,description); ;
 
 
+        }
+
+        public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string? description = null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(title);
+
+            if (title.Length < _minTitleLength)
+                throw new ArgumentException($"Title must be at least {_minTitleLength}");
+
+            if (startAt >= endAt)
+                throw new ArgumentException($"End date {endAt} must be latest then start date {startAt}");
+
+            Title = title;
+            Description = description;
+            StartAt = startAt;
+            EndAt = endAt;
+        }
     }
 }
