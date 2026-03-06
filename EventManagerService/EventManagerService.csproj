@@ -14,4 +14,8 @@
     <Folder Include="Presentation\DTOs\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.4" />
+  </ItemGroup>
+
 </Project>
