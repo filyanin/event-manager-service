@@ -7,13 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Presentation\Validators\**" />
-    <Content Remove="Presentation\Validators\**" />
-    <EmbeddedResource Remove="Presentation\Validators\**" />
-    <None Remove="Presentation\Validators\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Infrastructure\" />
   </ItemGroup>
 

@@ -18,19 +18,19 @@ namespace EventManagerService.Application
 
         public OutputEventDTO AddEvent(InputEventDTO newEvent)
         {
-            if (newEvent.startAt == null)
+            if (newEvent.StartAt == null)
             {
                 throw (new ArgumentException("start Date must be not null"));
             }
 
-            if (newEvent.endAt == null)
+            if (newEvent.EndAt == null)
             {
                 throw (new ArgumentException("end Date must be not null"));
             }
 
 
             var outputEvent = _eventService.AddEvent(
-                Domain.Models.Event.Create(newEvent.title, (DateTime)newEvent.startAt, (DateTime)newEvent.endAt, newEvent.description));
+                Domain.Models.Event.Create(newEvent.Title, (DateTime)newEvent.StartAt, (DateTime)newEvent.EndAt, newEvent.Description));
 
             return new OutputEventDTO(outputEvent);
         }
@@ -65,22 +65,22 @@ namespace EventManagerService.Application
 
         public bool UpdateEvent(Guid id, InputEventDTO updatedEvent)
         {
-            if (updatedEvent.startAt == null)
+            if (updatedEvent.StartAt == null)
             {
                 throw (new ArgumentException("start Date must be not null"));
             }
 
-            if (updatedEvent.endAt == null)
+            if (updatedEvent.EndAt == null)
             {
                 throw (new ArgumentException("end Date must be not null"));
             }
 
             return _eventService.UpdateEvent(
                 id,
-                updatedEvent.title,
-                (DateTime)updatedEvent.startAt,
-                (DateTime)updatedEvent.endAt,
-                updatedEvent.description
+                updatedEvent.Title,
+                (DateTime)updatedEvent.StartAt,
+                (DateTime)updatedEvent.EndAt,
+                updatedEvent.Description
                 );
         }
     }

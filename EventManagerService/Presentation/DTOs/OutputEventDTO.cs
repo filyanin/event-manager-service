@@ -5,28 +5,28 @@ namespace EventManagerService.Presentation.DTOs
 {
     public record OutputEventDTO
     {
-        public Guid id;
-        public string title;
-        public string? description;
-        public DateTime startAt;
-        public DateTime endAt;
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string? Description { get; set; }
+        public DateTime StartAt { get; set; }
+        public DateTime EndAt { get; set; }
 
-        public OutputEventDTO(Guid _id, string _title, DateTime _startAt, DateTime _endAt, string? description = null)
+        public OutputEventDTO(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            this.id = _id;
-            this.title = _title;
-            this.description = description;
-            this.startAt = _startAt;
-            this.endAt = _endAt;
+            Id = id;
+            Title = title;
+            Description = description;
+            StartAt = startAt;
+            EndAt = endAt;
         }
 
         public OutputEventDTO(Event _event)
         {
-            this.id = _event.Id;
-            this.title = _event.Title;
-            this.description = _event.Description;
-            this.startAt = _event.StartAt;
-            this.endAt = _event.EndAt;
+            Id = _event.Id;
+            Title = _event.Title;
+            Description = _event.Description;
+            StartAt = _event.StartAt;
+            EndAt = _event.EndAt;
         }
     }
 }

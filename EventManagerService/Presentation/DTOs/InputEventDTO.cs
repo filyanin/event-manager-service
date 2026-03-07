@@ -1,17 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using EventManagerService.Presentation.Validators;
+using System.ComponentModel.DataAnnotations;
 
 namespace EventManagerService.Presentation.DTOs
 {
     public record InputEventDTO
     {
         [Required]
-        [StringLength(1000,MinimumLength = 6)]
-        public required string title;
-        public string? description;
+        [StringLength(1000, MinimumLength = 6)]
+        public string Title { get; set; }
+        public string? Description { get; set; }
         [Required]
-        public DateTime? startAt;
+        public DateTime? StartAt { get; set; }
         [Required]
-        public DateTime? endAt;
+        [GreaterThan(nameof(StartAt))]
+        public DateTime? EndAt { get; set; }
     }
 
 
