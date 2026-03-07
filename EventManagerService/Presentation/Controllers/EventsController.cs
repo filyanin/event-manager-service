@@ -16,13 +16,17 @@ namespace EventManagerService.Presentation.Controllers
             _querryMapper = querryMapper;
         }
 
+        
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<List<OutputEventDTO>> GetAllEvents()
         {
             return Ok(_querryMapper.GetAllEvent());
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<OutputEventDTO> GetEventByID(Guid id)
         {
             var _event = _querryMapper.GetEventById(id);
@@ -32,8 +36,9 @@ namespace EventManagerService.Presentation.Controllers
 
             return Ok(_event);
         }
-
+        
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         public ActionResult<OutputEventDTO> CreateEvent([FromForm]InputEventDTO newEvent)
         {
             var _event = _querryMapper.AddEvent(newEvent);
@@ -41,6 +46,8 @@ namespace EventManagerService.Presentation.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult UpdateEvent(Guid id, [FromForm]InputEventDTO changedEvent)
         {
             if (_querryMapper.UpdateEvent(id,changedEvent))
@@ -49,6 +56,8 @@ namespace EventManagerService.Presentation.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult DeleteEvent(Guid id) 
         {
             if (_querryMapper.DeleteEvent(id))
