@@ -1,6 +1,8 @@
-﻿using System;
+﻿using EventManagerService.Properties;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Resources;
 using System.Text;
 
 namespace EventManagerService.Presentation.Validators
@@ -20,7 +22,7 @@ namespace EventManagerService.Presentation.Validators
 
             if (otherPropertyInfo == null)
             {
-                return new ValidationResult($"Unknown property: {_otherPropertyName}");
+                return new ValidationResult(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"),_otherPropertyName));
             }
 
             var otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
@@ -32,12 +34,12 @@ namespace EventManagerService.Presentation.Validators
                     return ValidationResult.Success;
                 }
                 else
-                {
-                    return new ValidationResult(ErrorMessage ?? $"{validationContext.DisplayName} must be greater than {_otherPropertyName}.");
+                {                 
+                    return new ValidationResult(ErrorMessage ?? string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), validationContext.DisplayName, _otherPropertyName));
                 }
             }
 
-            return new ValidationResult("This attribute can only be used on comparable types.");
+            return new ValidationResult(new ResourceManager(typeof(ErrorMessages)).GetString("NoComparableError"));
         }
 
     }

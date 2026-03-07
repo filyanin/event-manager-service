@@ -5,5 +5,5 @@ Web Api для сервиса управления мероприятиями
 1. Перейдите в корневую папку решения
 2. Запустите dotnet build
 3. Перейдите в папку проекта  cd .\EventManagerService\
-4. Используйте dotnet run -lp http
-5. После успешного запуска откройте http://localhost:5214/swagger/index.html для доступа к swagger
+4. Используйте dotnet run -lp http (по умолчанию используется порт 5214) или dotnet run
+5. После успешного запуска откройте http://localhost:port/swagger/index.html для доступа к swagger

@@ -1,68 +1,74 @@
 ﻿using EventManagerService.Application.Interfaces;
 using EventManagerService.Presentation.DTOs;
+using EventManagerService.Properties;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Resources;
 
 namespace EventManagerService.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
     public class EventsController : ControllerBase
     {
-        public IQuerryMapper _querryMapper;
+        public IQueryMapper _queryMapper;
 
-        public EventsController(IQuerryMapper querryMapper) 
+        public EventsController(IQueryMapper querryMapper) 
         {
-            _querryMapper = querryMapper;
+            _queryMapper = querryMapper;
         }
 
         
         [HttpGet]
+        [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<List<OutputEventDTO>> GetAllEvents()
         {
-            return Ok(_querryMapper.GetAllEvent());
+            return Ok(_queryMapper.GetAllEvent());
         }
 
-        [HttpGet("{id:guid}")]
+        [HttpGet]
+        [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<OutputEventDTO> GetEventByID(Guid id)
         {
-            var _event = _querryMapper.GetEventById(id);
+            var _event = _queryMapper.GetEventById(id);
 
             if (_event == null)
-                return NotFound($"Oblect with id {id} has not found");
+                return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
 
             return Ok(_event);
         }
         
         [HttpPost]
+        [Route("events")]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public ActionResult<OutputEventDTO> CreateEvent([FromForm]InputEventDTO newEvent)
+        public ActionResult<OutputEventDTO> CreateEvent(InputEventDTO newEvent)
         {
-            var _event = _querryMapper.AddEvent(newEvent);
+            var _event = _queryMapper.AddEvent(newEvent);
             return CreatedAtAction(nameof(GetEventByID), new { id = _event.Id }, _event);
         }
 
-        [HttpPut("{id:guid}")]
+        [HttpPut]
+        [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult UpdateEvent(Guid id, [FromForm]InputEventDTO changedEvent)
+        public ActionResult UpdateEvent(Guid id, InputEventDTO changedEvent)
         {
-            if (_querryMapper.UpdateEvent(id,changedEvent))
+            if (_queryMapper.UpdateEvent(id,changedEvent))
                 return Ok();
-            return NotFound();
+            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
         }
 
-        [HttpDelete("{id:guid}")]
+        [HttpDelete]
+        [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult DeleteEvent(Guid id) 
         {
-            if (_querryMapper.DeleteEvent(id))
+            if (_queryMapper.DeleteEvent(id))
                 return Ok();
-            return NotFound();
+            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
         }
         
     }

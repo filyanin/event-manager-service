@@ -6,7 +6,7 @@ using System.Text;
 
 namespace EventManagerService.Application.Interfaces
 {
-    public interface IQuerryMapper
+    public interface IQueryMapper
     {
         public List<OutputEventDTO> GetAllEvent();
         public OutputEventDTO? GetEventById(Guid id);

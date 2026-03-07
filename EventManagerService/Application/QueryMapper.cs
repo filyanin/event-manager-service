@@ -7,28 +7,17 @@ using System.Text;
 
 namespace EventManagerService.Application
 {
-    public class QuerryMapper : IQuerryMapper
+    public class QueryMapper : IQueryMapper
     {
         private IEventService _eventService;
 
-        public QuerryMapper(IEventService eventService)
+        public QueryMapper(IEventService eventService)
         {
             _eventService = eventService;
         }
 
         public OutputEventDTO AddEvent(InputEventDTO newEvent)
         {
-            if (newEvent.StartAt == null)
-            {
-                throw (new ArgumentException("start Date must be not null"));
-            }
-
-            if (newEvent.EndAt == null)
-            {
-                throw (new ArgumentException("end Date must be not null"));
-            }
-
-
             var outputEvent = _eventService.AddEvent(
                 Domain.Models.Event.Create(newEvent.Title, (DateTime)newEvent.StartAt, (DateTime)newEvent.EndAt, newEvent.Description));
 
@@ -65,16 +54,6 @@ namespace EventManagerService.Application
 
         public bool UpdateEvent(Guid id, InputEventDTO updatedEvent)
         {
-            if (updatedEvent.StartAt == null)
-            {
-                throw (new ArgumentException("start Date must be not null"));
-            }
-
-            if (updatedEvent.EndAt == null)
-            {
-                throw (new ArgumentException("end Date must be not null"));
-            }
-
             return _eventService.UpdateEvent(
                 id,
                 updatedEvent.Title,
