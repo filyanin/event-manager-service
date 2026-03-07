@@ -35,7 +35,7 @@ namespace EventManagerService.Domain
 
         public Event? GetEventById(Guid id)
         {
-            return events.Find(e => e.Id.Equals(id))    ;
+            return events.Find(e => e.Id.Equals(id));
         }
 
         public bool UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)

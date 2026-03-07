@@ -27,7 +27,7 @@ namespace EventManagerService.Domain.Models
         public static Event Create(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
-
+            
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
                 throw new ArgumentException($"Title must be at least {_minTitleLength} and smaller then {_maxTitleLength}");
 

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using EventManagerService.Application.Interfaces;
+using System.Runtime.CompilerServices;
 
 namespace EventManagerService.Application
 {
@@ -6,7 +7,7 @@ namespace EventManagerService.Application
     {
         public static IServiceCollection AddAplication(this IServiceCollection services)
         {
-
+            services.AddScoped<IQuerryMapper, QuerryMapper>();
 
             return services; 
         }
