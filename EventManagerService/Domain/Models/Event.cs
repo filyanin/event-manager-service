@@ -5,6 +5,7 @@ namespace EventManagerService.Domain.Models
     public class Event
     {
         private const int _minTitleLength = 6;
+        private const int _maxTitleLength = 1000;
         public Guid Id { get; private set; }
 
         public string Title { get; private set; }
@@ -27,8 +28,8 @@ namespace EventManagerService.Domain.Models
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
-            if (title.Length < _minTitleLength)
-                throw new ArgumentException($"Title must be at least {_minTitleLength}");
+            if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
+                throw new ArgumentException($"Title must be at least {_minTitleLength} and smaller then {_maxTitleLength}");
 
             if (startAt >= endAt)
                 throw new ArgumentException($"End date {endAt} must be latest then start date {startAt}");
@@ -42,8 +43,8 @@ namespace EventManagerService.Domain.Models
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
-            if (title.Length < _minTitleLength)
-                throw new ArgumentException($"Title must be at least {_minTitleLength}");
+            if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
+                throw new ArgumentException($"Title must be at least {_minTitleLength} and smaller then {_maxTitleLength}");
 
             if (startAt >= endAt)
                 throw new ArgumentException($"End date {endAt} must be latest then start date {startAt}");

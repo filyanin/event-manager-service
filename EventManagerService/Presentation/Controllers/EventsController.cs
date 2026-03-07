@@ -8,25 +8,25 @@ namespace EventManagerService.Presentation.Controllers
     public class EventsController : ControllerBase
     {
         [HttpGet]
-        public ActionResult<EventDTO> GetAllEvents()
+        public ActionResult<List<OutputEventDTO>> GetAllEvents()
         {
             throw new NotImplementedException();
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<EventDTO> GetEventByID(Guid id)
+        public ActionResult<OutputEventDTO> GetEventByID(Guid id)
         {
             throw new NotImplementedException();
         }
 
         [HttpPost]
-        public ActionResult<EventDTO> CreateEvent([FromBody]EventDTO newEvent)
+        public ActionResult<InputEventDTO> CreateEvent([FromForm]InputEventDTO newEvent)
         {
             throw new NotImplementedException();
         }
 
         [HttpPut("{id:guid}")]
-        public ActionResult UpdateEvent(Guid id, [FromBody]EventDTO changedEvent)
+        public ActionResult UpdateEvent(Guid id, [FromForm]InputEventDTO changedEvent)
         {
             throw new NotImplementedException();
         }

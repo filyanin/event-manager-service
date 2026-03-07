@@ -2,9 +2,10 @@
 
 namespace EventManagerService.Presentation.DTOs
 {
-    public record EventDTO
+    public record InputEventDTO
     {
         [Required]
+        [StringLength(1000,MinimumLength = 6)]
         public required string title;
         public string? description;
         [Required]
@@ -12,4 +13,6 @@ namespace EventManagerService.Presentation.DTOs
         [Required]
         public DateTime? endAt;
     }
+
+
 }
