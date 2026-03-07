@@ -34,12 +34,8 @@ namespace EventManagerService.Presentation.Controllers
         }
 
         [HttpPost]
-        public ActionResult<OutputEventDTO> CreateEvent(InputEventDTO newEvent)
+        public ActionResult<OutputEventDTO> CreateEvent([FromForm]InputEventDTO newEvent)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
             var _event = _querryMapper.AddEvent(newEvent);
             return CreatedAtAction(nameof(GetEventByID), new { id = _event.Id }, _event);
         }
