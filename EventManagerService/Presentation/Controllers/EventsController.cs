@@ -12,9 +12,9 @@ namespace EventManagerService.Presentation.Controllers
     {
         public IQueryMapper _queryMapper;
 
-        public EventsController(IQueryMapper querryMapper) 
+        public EventsController(IQueryMapper queryMapper) 
         {
-            _queryMapper = querryMapper;
+            _queryMapper = queryMapper;
         }
 
         

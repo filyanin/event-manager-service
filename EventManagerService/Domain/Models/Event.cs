@@ -32,7 +32,7 @@ namespace EventManagerService.Domain.Models
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
             
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
-                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength,_minTitleLength));
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength,_maxTitleLength));
             
             if (startAt >= endAt)
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(endAt), nameof(startAt)));
@@ -47,7 +47,7 @@ namespace EventManagerService.Domain.Models
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
-                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength, _minTitleLength));
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength, _maxTitleLength));
 
             if (startAt >= endAt)
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(endAt), nameof(startAt)));
