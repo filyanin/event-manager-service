@@ -17,13 +17,13 @@ namespace EventManagerService.Presentation.Controllers
             _queryMapper = queryMapper;
         }
 
-        
+
         [HttpGet]
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<List<OutputEventDTO>> GetAllEvents()
+        public ActionResult<PaginatedResult> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
         {
-            return Ok(_queryMapper.GetAllEvent());
+            return Ok(_queryMapper.GetAllEvent(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
         }
 
         [HttpGet]

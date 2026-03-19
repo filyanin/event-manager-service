@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Domain.Filters;
+using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -28,9 +29,28 @@ namespace EventManagerService.Domain
             return false;
         }
 
-        public IReadOnlyList<Event> GetAllEvent()
+        public IReadOnlyList<Event> GetAllEvent(out int total, EventsFilters filters, int page = 1, int pageSize = 10)
         {
-            return events.AsReadOnly();
+            IEnumerable<Event> query = events;
+
+            if (filters.Title != null)
+            {
+                query = query.Where(e => e.Title.ToLower().Contains(filters.Title.ToLower()));
+            }
+            if (filters.From != null)
+            {
+                query = query.Where(e => e.StartAt >= filters.From);
+            }
+            if (filters.To != null)
+            {
+                query = query.Where(e => e.EndAt <= filters.To);
+            }
+
+            total = query.Count();
+
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);        
+
+            return query.ToList().AsReadOnly();
         }
 
         public Event? GetEventById(Guid id)

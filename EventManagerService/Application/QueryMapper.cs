@@ -1,4 +1,5 @@
 ﻿using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Presentation.DTOs;
 using System;
@@ -29,16 +30,17 @@ namespace EventManagerService.Application
             return _eventService.DeleteEvent(id);
         }
 
-        public List<OutputEventDTO> GetAllEvent()
+        public PaginatedResult GetAllEvent(EventsFilters filters, int page = 1, int pageSize = 10)
         {
             List<OutputEventDTO> resultList = new List<OutputEventDTO>();
-            
-            foreach (var _event in _eventService.GetAllEvent())
+            int total;
+
+            foreach (var _event in _eventService.GetAllEvent(out total,filters, page, pageSize))
             {
                 resultList.Add(new OutputEventDTO(_event));
             }
 
-            return resultList;
+            return new PaginatedResult() { Events = resultList, Total = total, CurrentPageSize = resultList.Count, Page = page};
         }
 
         public OutputEventDTO? GetEventById(Guid id)
