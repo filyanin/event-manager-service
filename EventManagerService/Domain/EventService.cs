@@ -20,7 +20,7 @@ namespace EventManagerService.Domain
         public bool DeleteEvent(Guid id)
         {
             int index = events.FindIndex(e => e.Id.Equals(id));
-
+            
             if (index != -1)
             {
                 events.RemoveAt(index);
