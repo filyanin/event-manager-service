@@ -16,9 +16,9 @@ namespace EventService.Tests
 
         public DeleteEventTest() 
         {
-            //Создание EventManager с непустым списком
+
             eventService = new EventManagerService.Domain.EventService();
-            eventService.AddEvent(Event.Create("Test event", DateTime.MinValue, DateTime.MaxValue));
+            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
@@ -31,8 +31,7 @@ namespace EventService.Tests
         public void SuccessDeleteEventById_DeleteEventTest()
         {
 
-            var ev = Event.Create("Test event", DateTime.MinValue, DateTime.MaxValue);
-            eventService.AddEvent(ev);
+            var ev = eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
 
             eventService.DeleteEvent(ev.Id);
 
@@ -40,10 +39,13 @@ namespace EventService.Tests
             Assert.DoesNotContain<Event>(ev, eventList);
 
         }
-
+        [Fact]
         public void WrongId_DeleteEventTest()
         {
+            var ex = Record.Exception(() => eventService.DeleteEvent(Guid.NewGuid()));
 
+            Assert.NotNull(ex);
+            Assert.IsType<KeyNotFoundException>(ex);
         }
 
     }

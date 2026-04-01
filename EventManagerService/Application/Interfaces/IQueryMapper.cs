@@ -10,9 +10,9 @@ namespace EventManagerService.Application.Interfaces
     public interface IQueryMapper
     {
         public PaginatedResult GetAllEvent(EventsFilters filters, int page = 1, int pageSize = 10);
-        public OutputEventDTO? GetEventById(Guid id);
+        public OutputEventDTO GetEventById(Guid id);
         public OutputEventDTO AddEvent(InputEventDTO newEvent);
-        public bool UpdateEvent(Guid id, InputEventDTO updatedEvent);
-        public bool DeleteEvent(Guid id);
+        public void UpdateEvent(Guid id, InputEventDTO updatedEvent);
+        public void DeleteEvent(Guid id);
     }
 }

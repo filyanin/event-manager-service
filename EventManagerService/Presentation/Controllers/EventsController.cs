@@ -32,12 +32,8 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<OutputEventDTO> GetEventByID(Guid id)
         {
-            var _event = _queryMapper.GetEventById(id);
-
-            if (_event == null)
-                return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-
-            return Ok(_event);
+                var _event = _queryMapper.GetEventById(id);
+                return Ok(_event);
         }
         
         [HttpPost]
@@ -55,9 +51,8 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult UpdateEvent(Guid id, InputEventDTO changedEvent)
         {
-            if (_queryMapper.UpdateEvent(id,changedEvent))
-                return Ok();
-            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+            _queryMapper.UpdateEvent(id, changedEvent);
+            return Ok();
         }
 
         [HttpDelete]
@@ -66,20 +61,7 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult DeleteEvent(Guid id) 
         {
-            if (_queryMapper.DeleteEvent(id))
-                return Ok();
-            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-        }
-
-
-        [HttpGet]
-        [Route("broke/{i:int}")]
-        public ActionResult BrokeEvent(int i)
-        {
-            List<int> test = new List<int>();
-
-            test[i].CompareTo(1);
-
+            _queryMapper.DeleteEvent(id);
             return Ok();
 
         }

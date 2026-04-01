@@ -43,14 +43,14 @@ namespace EventManagerService.Infrastructure
             {
                 return;
             }
-            var stausCode = MapStatusCode(ex);
+            var statusCode = MapStatusCode(ex);
 
-            context.Response.StatusCode = stausCode;
+            context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";
 
             var error = new ProblemDetails
             {
-                Status = stausCode,
+                Status = statusCode,
                 Detail = ex.Message
             };
 
@@ -60,6 +60,7 @@ namespace EventManagerService.Infrastructure
         private static int MapStatusCode(Exception ex) => ex switch
         {
             ValidationException ve => StatusCodes.Status400BadRequest,
+            KeyNotFoundException ve => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
 
         };
