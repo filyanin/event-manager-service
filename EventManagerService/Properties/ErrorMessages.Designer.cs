@@ -97,6 +97,15 @@ namespace EventManagerService.Properties {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Unhandled exception. Method={Method}, Path={Path}, RequestId={RequestId}.
+        /// </summary>
+        internal static string UnhandledException {
+            get {
+                return ResourceManager.GetString("UnhandledException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Unknown property {0}.
         /// </summary>
         internal static string UnknownPropertyError {

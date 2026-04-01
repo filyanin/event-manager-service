@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using EventManagerService.Properties;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Resources;
 
 namespace EventManagerService.Infrastructure
 {
@@ -29,7 +31,13 @@ namespace EventManagerService.Infrastructure
 
         public async Task HandleException (HttpContext context, Exception ex)
         {
-            throw new NotImplementedException("logging");
+
+            _logger.LogError(
+                ex,
+                new ResourceManager(typeof(ErrorMessages)).GetString("UnhandledException"),
+                context.Request.Method,
+                context.Request.Path,
+                context.Request.Headers["x-request-id"]);
 
             if (context.Response.HasStarted)
             {

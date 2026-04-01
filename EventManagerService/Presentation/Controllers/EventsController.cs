@@ -70,6 +70,18 @@ namespace EventManagerService.Presentation.Controllers
                 return Ok();
             return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
         }
-        
+
+
+        [HttpGet]
+        [Route("broke/{i:int}")]
+        public ActionResult BrokeEvent(int i)
+        {
+            List<int> test = new List<int>();
+
+            test[i].CompareTo(1);
+
+            return Ok();
+
+        }
     }
 }
