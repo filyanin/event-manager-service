@@ -28,7 +28,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void SuccessDeleteEventById_DeleteEventTest()
+        public void DeleteEvent_CorrectId_SuccessDelete()
         {
 
             var ev = eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
@@ -40,7 +40,7 @@ namespace EventService.Tests
 
         }
         [Fact]
-        public void WrongId_DeleteEventTest()
+        public void DeleteEvent_WrongId_KeyNotFoundException()
         {
             var ex = Record.Exception(() => eventService.DeleteEvent(Guid.NewGuid()));
 

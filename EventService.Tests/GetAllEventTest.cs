@@ -8,12 +8,12 @@ using System.Text;
 
 namespace EventService.Tests
 {
-    public class GetEventsTest
+    public class GetAllEventTest
     {
         public IEventService eventService;
         public List<Event> eventList;
         public List<string> titles;
-        public GetEventsTest()
+        public GetAllEventTest()
         {
 
             eventService = new EventManagerService.Domain.EventService();
@@ -34,8 +34,8 @@ namespace EventService.Tests
             var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
             eventList = (List<Event>)field?.GetValue(eventService);
         }
-        [Fact]
-        public void SuccessGetAllEvents_GetEventsTest()
+        [Fact] 
+        public void GetAllEvent_EmptyFilters_SuccessGetAllEvents()
         {
             int totalCount;
             var result = eventService.GetAllEvent(out totalCount,
@@ -45,7 +45,7 @@ namespace EventService.Tests
             Assert.All(result, e => titles.Contains(e.Title));
         }
         [Fact]
-        public void SuccessGetAllEventsFilterByTitle_GetEventsTest()
+        public void GetAllEvent_FilterByTitle_SuccessGetFilteredEvents()
         {
             var searchSubstring = "Goo";
             List<string> expectedResult = new List<string>
@@ -71,7 +71,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void SuccessGetAllEventsFilterByStartDate_GetEventsTest()
+        public void GetAllEvent_FilterByStartDate_SuccessGetFilteredEvents()
         {
             var searchDate = DateTime.Parse("2026-04-03T11:24:14.444Z");
 
@@ -102,7 +102,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void SuccessGetAllEventsFilterByEndDate_GetEventsTest()
+        public void GetAllEvent_FilterByEndDate_SuccessGetFilteredEvents()
         {
             var searchDate = DateTime.Parse("2026-04-03T11:24:14.444Z");
 
@@ -132,7 +132,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void SuccessGetAllEventsStartAndEndDateFilter_GetEventsTest()
+        public void GetAllEvent_FilterByStartAndEndDate_SuccessGetFilteredEvents()
         {
             var startDate = DateTime.Parse("2026-04-02T11:24:15.444Z");
             var endDate = DateTime.Parse("2026-04-05T11:24:13.444Z");
@@ -162,7 +162,7 @@ namespace EventService.Tests
             Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
         }
         [Fact]
-        public void SuccessGetAllEventsStartAndEndDateAndTitleFilter_GetEventsTest()
+        public void GetAllEvent_FilterByTitleAndStartAndEndDate_SuccessGetFilteredEvents()
         {
             var startDate = DateTime.Parse("2026-04-02T11:24:14.444Z");
             var endDate = DateTime.Parse("2026-04-06T11:24:14.444Z");
@@ -194,7 +194,7 @@ namespace EventService.Tests
         [Theory]
         [InlineData(100,10,1, 10)]
         [InlineData(8, 10, 1, 8)]
-        public void SuccessGetAllEventsPaginationTest_GetEventsTest(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
+        public void GetAllEvent_PaginationData_SuccessGetFilteredEvents(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
         {
             var service = new EventManagerService.Domain.EventService();
             for (int i = 0; i < elementCounts; i++) 

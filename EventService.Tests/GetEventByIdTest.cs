@@ -7,12 +7,12 @@ using System.Text;
 
 namespace EventService.Tests
 {
-    public  class GetEventTest
+    public  class GetEventByIdTest
     {
         public IEventService eventService;
         public List<Event> eventList;
 
-        public GetEventTest()
+        public GetEventByIdTest()
         {
 
             eventService = new EventManagerService.Domain.EventService();
@@ -25,7 +25,7 @@ namespace EventService.Tests
             eventList = (List<Event>)field?.GetValue(eventService);
         }
         [Fact]
-        public void SuccessGetEventById_GetEventTest()
+        public void GetEventById_CorrectId_SuccessGetEvent()
         {
             var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue);
 
@@ -35,7 +35,7 @@ namespace EventService.Tests
             Assert.Equal(ev.Id, anotherEvent.Id);
         }
         [Fact]
-        public void WrongId_GetEventTest()
+        public void GetEventById_WrongId_KeyNotFoundException()
         {
             var ex = Record.Exception(() => eventService.GetEventById(Guid.NewGuid()));
 

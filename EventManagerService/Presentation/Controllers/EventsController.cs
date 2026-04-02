@@ -1,8 +1,10 @@
 ﻿using EventManagerService.Application.Interfaces;
 using EventManagerService.Presentation.DTOs;
+using EventManagerService.Presentation.Validators;
 using EventManagerService.Properties;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Resources;
 
 namespace EventManagerService.Presentation.Controllers
@@ -21,7 +23,8 @@ namespace EventManagerService.Presentation.Controllers
         [HttpGet]
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<PaginatedResult> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 10)
+        
+        public ActionResult<PaginatedResult> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
         {
             return Ok(_queryMapper.GetAllEvent(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
         }

@@ -29,11 +29,22 @@ namespace EventManagerService.Domain
                 throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
             }
 
+
             events.RemoveAt(index);
         }
 
-        public IReadOnlyList<Event> GetAllEvent(out int total, EventsFilters filters, int page = 1, int pageSize = 10)
+        public IReadOnlyList<Event> GetAllEvent(out int total, EventsFilters filters, int page, int pageSize)
         {
+            if (page < 1)
+            {
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("PageNumberException"), page));
+            }
+
+            if (pageSize < 10 || pageSize > 100)
+            {
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("PageSizeException"), pageSize));
+            }
+
             IEnumerable<Event> query = events;
 
             if (filters.Title != null)

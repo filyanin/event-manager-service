@@ -29,7 +29,7 @@ namespace EventManagerService.Application
             _eventService.DeleteEvent(id);
         }
 
-        public PaginatedResult GetAllEvent(EventsFilters filters, int page = 1, int pageSize = 10)
+        public PaginatedResult GetAllEvent(EventsFilters filters, int page, int pageSize)
         {
             List<OutputEventDTO> resultList = new List<OutputEventDTO>();
             int total;

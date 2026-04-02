@@ -88,6 +88,24 @@ namespace EventManagerService.Properties {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на Page number must be greater then  0. Current page number is {0}.
+        /// </summary>
+        internal static string PageNumberException {
+            get {
+                return ResourceManager.GetString("PageNumberException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Page size must be greater then or equal to 10 and less then or equal to 100. Current page size is {0}.
+        /// </summary>
+        internal static string PageSizeException {
+            get {
+                return ResourceManager.GetString("PageSizeException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на The field {0} must be a string with a minimum length of {1} and a maximum length of {2}.
         /// </summary>
         internal static string StringLengthError {
