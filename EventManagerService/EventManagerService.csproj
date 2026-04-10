@@ -25,9 +25,4 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Domain\Interfaces\BookingService\" />
-    <Folder Include="Domain\Services\BookingService\" />
-  </ItemGroup>
-
 </Project>
