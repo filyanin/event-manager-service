@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Presentation.Validators;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventManagerService.Presentation.DTOs.Event
+namespace EventManagerService.Presentation.DTOs.EventService
 {
     public record InputEventDTO
     {

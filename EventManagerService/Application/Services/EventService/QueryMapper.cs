@@ -1,10 +1,7 @@
-﻿using EventManagerService.Application.Interfaces.Event;
+﻿using EventManagerService.Application.Interfaces.EventService;
 using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Presentation.DTOs.Event;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using EventManagerService.Presentation.DTOs.EventService;
 
 namespace EventManagerService.Application.Services.EventService
 {

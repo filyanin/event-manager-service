@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Domain.Models.Event;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventManagerService.Presentation.DTOs.Event
+namespace EventManagerService.Presentation.DTOs.EventService
 {
     public record OutputEventDTO
     {
