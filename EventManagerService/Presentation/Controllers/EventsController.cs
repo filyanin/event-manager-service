@@ -1,8 +1,10 @@
 ﻿using EventManagerService.Application.Interfaces;
 using EventManagerService.Presentation.DTOs;
+using EventManagerService.Presentation.Validators;
 using EventManagerService.Properties;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Resources;
 
 namespace EventManagerService.Presentation.Controllers
@@ -17,13 +19,14 @@ namespace EventManagerService.Presentation.Controllers
             _queryMapper = queryMapper;
         }
 
-        
+
         [HttpGet]
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<List<OutputEventDTO>> GetAllEvents()
+        
+        public ActionResult<PaginatedResult> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
         {
-            return Ok(_queryMapper.GetAllEvent());
+            return Ok(_queryMapper.GetAllEvent(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
         }
 
         [HttpGet]
@@ -32,12 +35,8 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<OutputEventDTO> GetEventByID(Guid id)
         {
-            var _event = _queryMapper.GetEventById(id);
-
-            if (_event == null)
-                return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-
-            return Ok(_event);
+                var _event = _queryMapper.GetEventById(id);
+                return Ok(_event);
         }
         
         [HttpPost]
@@ -55,9 +54,8 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult UpdateEvent(Guid id, InputEventDTO changedEvent)
         {
-            if (_queryMapper.UpdateEvent(id,changedEvent))
-                return Ok();
-            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+            _queryMapper.UpdateEvent(id, changedEvent);
+            return Ok();
         }
 
         [HttpDelete]
@@ -66,10 +64,9 @@ namespace EventManagerService.Presentation.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult DeleteEvent(Guid id) 
         {
-            if (_queryMapper.DeleteEvent(id))
-                return Ok();
-            return NotFound(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+            _queryMapper.DeleteEvent(id);
+            return Ok();
+
         }
-        
     }
 }

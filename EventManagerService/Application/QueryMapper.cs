@@ -1,4 +1,5 @@
 ﻿using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Presentation.DTOs;
 using System;
@@ -18,43 +19,39 @@ namespace EventManagerService.Application
 
         public OutputEventDTO AddEvent(InputEventDTO newEvent)
         {
-            var outputEvent = _eventService.AddEvent(
-                Domain.Models.Event.Create(newEvent.Title, (DateTime)newEvent.StartAt, (DateTime)newEvent.EndAt, newEvent.Description));
-
+            var outputEvent = _eventService.AddEvent(newEvent.Title, (DateTime)newEvent.StartAt, (DateTime)newEvent.EndAt, newEvent.Description);
+                
             return new OutputEventDTO(outputEvent);
         }
 
-        public bool DeleteEvent(Guid id)
+        public void DeleteEvent(Guid id)
         {
-            return _eventService.DeleteEvent(id);
+            _eventService.DeleteEvent(id);
         }
 
-        public List<OutputEventDTO> GetAllEvent()
+        public PaginatedResult GetAllEvent(EventsFilters filters, int page, int pageSize)
         {
             List<OutputEventDTO> resultList = new List<OutputEventDTO>();
-            
-            foreach (var _event in _eventService.GetAllEvent())
+            int total;
+
+            foreach (var _event in _eventService.GetAllEvent(out total,filters, page, pageSize))
             {
                 resultList.Add(new OutputEventDTO(_event));
             }
 
-            return resultList;
+            return new PaginatedResult() { Events = resultList, Total = total, CurrentPageSize = resultList.Count, Page = page};
         }
 
-        public OutputEventDTO? GetEventById(Guid id)
+        public OutputEventDTO GetEventById(Guid id)
         {
             var _event = _eventService.GetEventById(id);
 
-            if (_event == null)
-            {
-                return null;
-            }
             return new OutputEventDTO(_event);
         }
 
-        public bool UpdateEvent(Guid id, InputEventDTO updatedEvent)
+        public void UpdateEvent(Guid id, InputEventDTO updatedEvent)
         {
-            return _eventService.UpdateEvent(
+            _eventService.UpdateEvent(
                 id,
                 updatedEvent.Title,
                 (DateTime)updatedEvent.StartAt,

@@ -1,13 +1,14 @@
-﻿using EventManagerService.Domain.Models;
+﻿using EventManagerService.Domain.Filters;
+using EventManagerService.Domain.Models;
 
 namespace EventManagerService.Domain.Interfaces
 {
     public interface IEventService
     {
-        public IReadOnlyList<Event> GetAllEvent();
-        public Event? GetEventById(Guid id);
-        public Event AddEvent(Event newEvent);
-        public bool UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null);
-        public bool DeleteEvent(Guid id);
+        public IReadOnlyList<Event> GetAllEvent(out int total, EventsFilters filters, int page, int pageSize);
+        public Event GetEventById(Guid id);
+        public Event AddEvent(string title, DateTime startAt, DateTime endAt, string? description = null);
+        public void UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null);
+        public void DeleteEvent(Guid id);
     }
 }
