@@ -1,13 +1,13 @@
 ﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using EventManagerService.Properties;
 using System;
 using System.Collections.Generic;
 using System.Resources;
 using System.Text;
 
-namespace EventManagerService.Domain
+namespace EventManagerService.Domain.Services.EventService
 {
     public class EventService : IEventService
     {

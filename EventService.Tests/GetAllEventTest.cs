@@ -1,6 +1,5 @@
-﻿using EventManagerService.Domain;
-using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -30,7 +29,7 @@ namespace EventService.Tests
             titles.Add("Gooooood Event To Test");
             titles.Add("Simple Event");
 
-            Type type = typeof(EventManagerService.Domain.EventService);
+            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
             var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
             eventList = (List<Event>)field?.GetValue(eventService);
         }

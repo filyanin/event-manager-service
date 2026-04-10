@@ -1,4 +1,5 @@
-﻿using EventManagerService.Application.Interfaces;
+﻿using EventManagerService.Application.Interfaces.Event;
+using EventManagerService.Application.Services.EventService;
 using System.Runtime.CompilerServices;
 
 namespace EventManagerService.Application

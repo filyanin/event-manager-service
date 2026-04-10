@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Models;
+using EventManagerService.Domain.Models.Event;
 
-namespace EventManagerService.Domain.Interfaces
+namespace EventManagerService.Domain.Interfaces.EventService
 {
     public interface IEventService
     {

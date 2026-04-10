@@ -1,12 +1,12 @@
-﻿using EventManagerService.Application.Interfaces;
+﻿using EventManagerService.Application.Interfaces.Event;
 using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Interfaces;
-using EventManagerService.Presentation.DTOs;
+using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Presentation.DTOs.Event;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace EventManagerService.Application
+namespace EventManagerService.Application.Services.EventService
 {
     public class QueryMapper : IQueryMapper
     {

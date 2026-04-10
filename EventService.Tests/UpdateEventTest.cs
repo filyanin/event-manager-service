@@ -1,5 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -21,7 +21,7 @@ namespace EventService.Tests
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
-            Type type = typeof(EventManagerService.Domain.EventService);
+            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
             var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
             eventList = (List<Event>)field?.GetValue(eventService);
         }

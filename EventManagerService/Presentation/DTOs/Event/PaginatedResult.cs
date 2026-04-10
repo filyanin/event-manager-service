@@ -1,4 +1,4 @@
-﻿namespace EventManagerService.Presentation.DTOs
+﻿namespace EventManagerService.Presentation.DTOs.Event
 {
     public record PaginatedResult
     {

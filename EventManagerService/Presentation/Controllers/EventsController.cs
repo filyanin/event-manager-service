@@ -1,5 +1,5 @@
-﻿using EventManagerService.Application.Interfaces;
-using EventManagerService.Presentation.DTOs;
+﻿using EventManagerService.Application.Interfaces.Event;
+using EventManagerService.Presentation.DTOs.Event;
 using EventManagerService.Presentation.Validators;
 using EventManagerService.Properties;
 using Microsoft.AspNetCore.Http.HttpResults;

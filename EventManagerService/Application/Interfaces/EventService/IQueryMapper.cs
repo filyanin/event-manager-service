@@ -1,11 +1,11 @@
 ﻿using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Models;
-using EventManagerService.Presentation.DTOs;
+using EventManagerService.Presentation.DTOs.Event;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace EventManagerService.Application.Interfaces
+namespace EventManagerService.Application.Interfaces.EventService
 {
     public interface IQueryMapper
     {

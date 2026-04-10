@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Services.EventService;
 
 namespace EventManagerService.Domain
 {
