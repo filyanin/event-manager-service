@@ -5,8 +5,8 @@ namespace EventManagerService.Domain.Interfaces.BookingService
     public interface IBookingService
     {
 
-        public Booking CreateBookingAsync(Guid eventId);
+        public Task<Booking> CreateBookingAsync(Guid eventId);
 
-        public Booking GetBookingByIdAsync(Guid bookingId);
+        public Task<Booking> GetBookingByIdAsync(Guid bookingId);
     }
 }

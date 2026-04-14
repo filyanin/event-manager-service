@@ -1,4 +1,6 @@
-﻿using EventManagerService.Domain.Interfaces.EventService;
+﻿using EventManagerService.Domain.Interfaces.BookingService;
+using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Services.BookingService;
 using EventManagerService.Domain.Services.EventService;
 
 namespace EventManagerService.Domain
@@ -8,6 +10,8 @@ namespace EventManagerService.Domain
         public static IServiceCollection AddDomain(this IServiceCollection services) 
         {
             services.AddSingleton<IEventService, EventService>();
+
+            services.AddSingleton<IBookingService, BookingService>();
 
             return services;
         }

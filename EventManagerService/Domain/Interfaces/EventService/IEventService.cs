@@ -10,5 +10,6 @@ namespace EventManagerService.Domain.Interfaces.EventService
         public Event AddEvent(string title, DateTime startAt, DateTime endAt, string? description = null);
         public void UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null);
         public void DeleteEvent(Guid id);
+        public Task<bool> CheckEventById(Guid id);
     }
 }

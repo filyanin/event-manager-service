@@ -5,11 +5,11 @@ using EventManagerService.Presentation.DTOs.EventService;
 
 namespace EventManagerService.Application.Services.EventService
 {
-    public class QueryMapper : IQueryMapper
+    public class EventQueryMapper : IEventQueryMapper
     {
         private IEventService _eventService;
 
-        public QueryMapper(IEventService eventService)
+        public EventQueryMapper(IEventService eventService)
         {
             _eventService = eventService;
         }
