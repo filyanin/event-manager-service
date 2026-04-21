@@ -1,5 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,12 +15,12 @@ namespace EventService.Tests
         public GetEventByIdTest()
         {
 
-            eventService = new EventManagerService.Domain.EventService();
+            eventService = new EventManagerService.Domain.Services.EventService.EventService();
             eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
-            Type type = typeof(EventManagerService.Domain.EventService);
+            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
             var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
             eventList = (List<Event>)field?.GetValue(eventService);
         }

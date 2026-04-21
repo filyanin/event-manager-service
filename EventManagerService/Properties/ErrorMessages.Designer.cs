@@ -115,6 +115,15 @@ namespace EventManagerService.Properties {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на It is not possible to change the status of a completed booking..
+        /// </summary>
+        internal static string TryChangeCompletedBookingError {
+            get {
+                return ResourceManager.GetString("TryChangeCompletedBookingError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Unhandled exception. Method={Method}, Path={Path}, RequestId={RequestId}.
         /// </summary>
         internal static string UnhandledException {

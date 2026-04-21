@@ -1,3 +1,4 @@
+
 using EventManagerService.Application;
 using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
