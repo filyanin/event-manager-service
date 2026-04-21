@@ -12,7 +12,7 @@ namespace EventService.Tests
         public List<Event> eventsList;  
         public AddEventTest()
         {
-            eventService = new EventManagerService.Domain.EventService();
+            eventService = new EventManagerService.Domain.Services.EventService.EventService();
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
             Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);

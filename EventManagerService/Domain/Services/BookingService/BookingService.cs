@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces.BookingService;
+﻿using EventManagerService.Domain.Enum;
+using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Booking;
 using EventManagerService.Properties;
@@ -42,6 +43,37 @@ namespace EventManagerService.Domain.Services.BookingService
             }
 
             return bookings[index];
+        }
+
+        public async Task<List<Booking>> GetBookingByStateAsync(BookingStatus state)
+        {
+            return await Task.FromResult(bookings.Where(b => b.Status == state).ToList());
+        }
+
+        public async Task ConfirmBookingAsync(Guid bookingId)
+        {
+            int index = await Task.FromResult(bookings.FindIndex(b => b.Id == bookingId));
+
+            if (index == -1)
+            {
+                throw new KeyNotFoundException(string.Format(
+                   new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
+            }
+
+            bookings[index].SetBookingConfirmed(DateTime.UtcNow);
+        }
+
+        public async Task RejectBookingAsync(Guid bookingId)
+        {
+            int index = await Task.FromResult(bookings.FindIndex(b => b.Id == bookingId));
+
+            if (index == -1)
+            {
+                throw new KeyNotFoundException(string.Format(
+                   new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
+            }
+
+            bookings[index].SetBookingRejected(DateTime.UtcNow);
         }
     }
 }

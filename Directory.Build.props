@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Suppress nullable reference warnings about possibly null arguments (e.g. CS8604) across the solution -->
+    <NoWarn>$(NoWarn);CS8604</NoWarn>
+  </PropertyGroup>
+</Project>

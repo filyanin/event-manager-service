@@ -1,9 +1,7 @@
 ﻿using EventManagerService.Properties;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Resources;
-using System.Text;
 
 namespace EventManagerService.Presentation.Validators
 {
@@ -22,7 +20,9 @@ namespace EventManagerService.Presentation.Validators
 
             if (otherPropertyInfo == null)
             {
+#pragma warning disable CS8604 // Possible null reference argument.
                 return new ValidationResult(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"),_otherPropertyName));
+#pragma warning restore CS8604 // Possible null reference argument.
             }
 
             var otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
@@ -35,11 +35,17 @@ namespace EventManagerService.Presentation.Validators
                 }
                 else
                 {                 
+#pragma warning disable CS8604 // Possible null reference argument.
                     return new ValidationResult(ErrorMessage ?? string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), validationContext.DisplayName, _otherPropertyName));
+#pragma warning restore CS8604 // Possible null reference argument.
                 }
             }
 
-            return new ValidationResult(new ResourceManager(typeof(ErrorMessages)).GetString("NoComparableError"));
+            return new ValidationResult(
+#pragma warning disable CS8604 // Possible null reference argument.
+                new ResourceManager(typeof(ErrorMessages)).GetString("NoComparableError")
+#pragma warning restore CS8604 // Possible null reference argument.
+            );
         }
 
     }

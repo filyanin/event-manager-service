@@ -16,7 +16,7 @@ namespace EventService.Tests
         public DeleteEventTest() 
         {
 
-            eventService = new EventManagerService.Domain.EventService();
+            eventService = new EventManagerService.Domain.Services.EventService.EventService();
             eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
 
 
