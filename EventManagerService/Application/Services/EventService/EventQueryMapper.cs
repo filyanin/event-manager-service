@@ -16,8 +16,14 @@ namespace EventManagerService.Application.Services.EventService
 
         public OutputEventDTO AddEvent(InputEventDTO newEvent)
         {
-            var outputEvent = _eventService.AddEvent(newEvent.Title, (DateTime)newEvent.StartAt, (DateTime)newEvent.EndAt, newEvent.Description);
-                
+#pragma warning disable CS8629 // Тип значения, допускающего NULL, может быть NULL.
+            var outputEvent = _eventService.AddEvent(newEvent.Title,
+                                                     (DateTime)newEvent.StartAt,
+                                                     (DateTime)newEvent.EndAt,
+                                                     (int)newEvent.TotalSeat,
+                                                     newEvent.Description);
+#pragma warning restore CS8629 // Тип значения, допускающего NULL, может быть NULL.
+
             return new OutputEventDTO(outputEvent);
         }
 
@@ -48,6 +54,7 @@ namespace EventManagerService.Application.Services.EventService
 
         public void UpdateEvent(Guid id, InputEventDTO updatedEvent)
         {
+#pragma warning disable CS8629 // Тип значения, допускающего NULL, может быть NULL.
             _eventService.UpdateEvent(
                 id,
                 updatedEvent.Title,
@@ -55,6 +62,7 @@ namespace EventManagerService.Application.Services.EventService
                 (DateTime)updatedEvent.EndAt,
                 updatedEvent.Description
                 );
+
         }
     }
 }

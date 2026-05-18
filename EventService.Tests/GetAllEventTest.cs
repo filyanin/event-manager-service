@@ -16,11 +16,11 @@ namespace EventService.Tests
         {
 
             eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"));
-            eventService.AddEvent("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"));
-            eventService.AddEvent("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"));
-            eventService.AddEvent("Gooooood Event To Test", DateTime.Parse("2026-04-04T11:24:14.444Z"), DateTime.Parse("2026-04-05T11:24:14.444Z"));
-            eventService.AddEvent("Simple Event", DateTime.Parse("2026-04-05T11:24:14.444Z"), DateTime.Parse("2026-04-06T11:24:14.444Z"));
+            eventService.AddEvent("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1);
+            eventService.AddEvent("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1);
+            eventService.AddEvent("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1);
+            eventService.AddEvent("Gooooood Event To Test", DateTime.Parse("2026-04-04T11:24:14.444Z"), DateTime.Parse("2026-04-05T11:24:14.444Z"), 1);
+            eventService.AddEvent("Simple Event", DateTime.Parse("2026-04-05T11:24:14.444Z"), DateTime.Parse("2026-04-06T11:24:14.444Z"), 1);
 
             titles = new List<string>();
             titles.Add("Good Event To Test");
@@ -198,7 +198,7 @@ namespace EventService.Tests
             var service = new EventManagerService.Domain.Services.EventService.EventService();
             for (int i = 0; i < elementCounts; i++) 
             {
-                service.AddEvent("TestEvent", DateTime.MinValue, DateTime.MaxValue);
+                service.AddEvent("TestEvent", DateTime.MinValue, DateTime.MaxValue, 1);
             }
             
             

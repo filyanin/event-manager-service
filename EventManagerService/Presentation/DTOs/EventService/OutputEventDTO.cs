@@ -10,14 +10,18 @@ namespace EventManagerService.Presentation.DTOs.EventService
         public string? Description { get; set; }
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
+        public int TotalSeats { get; set; }
+        public int AvailableSeats { get; set; }
 
-        public OutputEventDTO(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
+        public OutputEventDTO(Guid id, string title, DateTime startAt, DateTime endAt,int totalSeats,int availableSeats, string? description = null)
         {
             Id = id;
             Title = title;
             Description = description;
             StartAt = startAt;
             EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = availableSeats;
         }
 
         public OutputEventDTO(Event _event)
@@ -27,6 +31,8 @@ namespace EventManagerService.Presentation.DTOs.EventService
             Description = _event.Description;
             StartAt = _event.StartAt;
             EndAt = _event.EndAt;
+            TotalSeats= _event.TotalSeats;
+            AvailableSeats= _event.AvailableSeats;
         }
     }
 }
