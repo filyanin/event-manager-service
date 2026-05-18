@@ -1,13 +1,13 @@
 ﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using EventManagerService.Properties;
 using System;
 using System.Collections.Generic;
 using System.Resources;
 using System.Text;
 
-namespace EventManagerService.Domain
+namespace EventManagerService.Domain.Services.EventService
 {
     public class EventService : IEventService
     {
@@ -15,6 +15,7 @@ namespace EventManagerService.Domain
 
         public Event AddEvent(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
+            
             var ev = Event.Create(title, startAt, endAt, description);
             events.Add(ev);
             return ev;
@@ -22,6 +23,7 @@ namespace EventManagerService.Domain
 
         public void DeleteEvent(Guid id)
         {
+            
             int index = events.FindIndex(e => e.Id.Equals(id));
             
             if (index == -1)
@@ -37,12 +39,16 @@ namespace EventManagerService.Domain
         {
             if (page < 1)
             {
+#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("PageNumberException"), page));
+#pragma warning restore CS8604 // Possible null reference argument.
             }
 
             if (pageSize < 10 || pageSize > 100)
             {
+#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("PageSizeException"), pageSize));
+#pragma warning restore CS8604 // Possible null reference argument.
             }
 
             IEnumerable<Event> query = events;
@@ -63,7 +69,7 @@ namespace EventManagerService.Domain
             total = query.Count();
 
             query = query.Skip((page - 1) * pageSize).Take(pageSize);        
-
+            
             return query.ToList().AsReadOnly();
         }
 
@@ -73,7 +79,9 @@ namespace EventManagerService.Domain
 
             if (index == -1)
             {
+#pragma warning disable CS8604 // Possible null reference argument.
                 throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+#pragma warning restore CS8604 // Possible null reference argument.
             }
             return events[index];
         }
@@ -81,13 +89,20 @@ namespace EventManagerService.Domain
         public void UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
         {
             int index = events.FindIndex(e => e.Id.Equals(id));
-
+            
             if (index == -1)
             {
-               throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+#pragma warning disable CS8604 // Possible null reference argument.
+                throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
+#pragma warning restore CS8604 // Possible null reference argument.
             }
             events[index].UpdateEvent(title, startAt, endAt, description);
 
+        }
+
+        public async Task<bool> CheckEventById(Guid id)
+        {
+            return await Task.FromResult(events.Any(e => e.Id.Equals(id)));
         }
 
 

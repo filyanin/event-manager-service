@@ -1,6 +1,5 @@
-﻿using EventManagerService.Domain;
-using EventManagerService.Domain.Interfaces;
-using EventManagerService.Domain.Models;
+﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Models.Event;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -16,7 +15,7 @@ namespace EventService.Tests
         public GetAllEventTest()
         {
 
-            eventService = new EventManagerService.Domain.EventService();
+            eventService = new EventManagerService.Domain.Services.EventService.EventService();
             eventService.AddEvent("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"));
             eventService.AddEvent("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"));
             eventService.AddEvent("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"));
@@ -30,7 +29,7 @@ namespace EventService.Tests
             titles.Add("Gooooood Event To Test");
             titles.Add("Simple Event");
 
-            Type type = typeof(EventManagerService.Domain.EventService);
+            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
             var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
             eventList = (List<Event>)field?.GetValue(eventService);
         }
@@ -196,7 +195,7 @@ namespace EventService.Tests
         [InlineData(8, 10, 1, 8)]
         public void GetAllEvent_PaginationData_SuccessGetFilteredEvents(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
         {
-            var service = new EventManagerService.Domain.EventService();
+            var service = new EventManagerService.Domain.Services.EventService.EventService();
             for (int i = 0; i < elementCounts; i++) 
             {
                 service.AddEvent("TestEvent", DateTime.MinValue, DateTime.MaxValue);

@@ -34,7 +34,9 @@ namespace EventManagerService.Infrastructure
 
             _logger.LogError(
                 ex,
+#pragma warning disable CS8604 // Possible null reference argument.
                 new ResourceManager(typeof(ErrorMessages)).GetString("UnhandledException"),
+#pragma warning restore CS8604 // Possible null reference argument.
                 context.Request.Method,
                 context.Request.Path,
                 context.Request.Headers["x-request-id"]);

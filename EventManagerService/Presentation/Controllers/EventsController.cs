@@ -1,5 +1,5 @@
-﻿using EventManagerService.Application.Interfaces;
-using EventManagerService.Presentation.DTOs;
+﻿using EventManagerService.Application.Interfaces.EventService;
+using EventManagerService.Presentation.DTOs.EventService;
 using EventManagerService.Presentation.Validators;
 using EventManagerService.Properties;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -12,9 +12,9 @@ namespace EventManagerService.Presentation.Controllers
     [ApiController]
     public class EventsController : ControllerBase
     {
-        public IQueryMapper _queryMapper;
+        public IEventQueryMapper _queryMapper;
 
-        public EventsController(IQueryMapper queryMapper) 
+        public EventsController(IEventQueryMapper queryMapper) 
         {
             _queryMapper = queryMapper;
         }

@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Models;
+using EventManagerService.Domain.Models.Event;
 
-namespace EventManagerService.Domain.Interfaces
+namespace EventManagerService.Domain.Interfaces.EventService
 {
     public interface IEventService
     {
@@ -10,5 +10,6 @@ namespace EventManagerService.Domain.Interfaces
         public Event AddEvent(string title, DateTime startAt, DateTime endAt, string? description = null);
         public void UpdateEvent(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null);
         public void DeleteEvent(Guid id);
+        public Task<bool> CheckEventById(Guid id);
     }
 }

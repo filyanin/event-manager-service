@@ -135,6 +135,9 @@
   <data name="StringLengthError" xml:space="preserve">
     <value>The field {0} must be a string with a minimum length of {1} and a maximum length of {2}</value>
   </data>
+  <data name="TryChangeCompletedBookingError" xml:space="preserve">
+    <value>It is not possible to change the status of a completed booking.</value>
+  </data>
   <data name="UnhandledException" xml:space="preserve">
     <value>Unhandled exception. Method={Method}, Path={Path}, RequestId={RequestId}</value>
   </data>
