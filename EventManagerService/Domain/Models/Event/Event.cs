@@ -85,9 +85,18 @@ namespace EventManagerService.Domain.Models.Event
 
         public bool ReleaseSeats(int count = 1)
         {
+            if (count <= 0)
+            {
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(count), "0"));
+            }
 
-            throw new NotImplementedException();
-         
+            if (AvailableSeats + count > TotalSeats)
+            {
+                return false;
+            }
+
+            AvailableSeats += count;
+            return true;
         }
     }
 }

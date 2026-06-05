@@ -1,4 +1,5 @@
-﻿using EventManagerService.Properties;
+﻿using EventManagerService.Domain.Exceptions;
+using EventManagerService.Properties;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Resources;
@@ -63,6 +64,7 @@ namespace EventManagerService.Infrastructure
         {
             ValidationException ve => StatusCodes.Status400BadRequest,
             KeyNotFoundException ve => StatusCodes.Status404NotFound,
+            NoAvailableSeatsException ne => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
 
         };
