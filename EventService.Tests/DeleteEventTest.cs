@@ -17,7 +17,7 @@ namespace EventService.Tests
         {
 
             eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
+            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
@@ -30,7 +30,7 @@ namespace EventService.Tests
         public void DeleteEvent_CorrectId_SuccessDelete()
         {
 
-            var ev = eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
+            var ev = eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
 
             eventService.DeleteEvent(ev.Id);
 

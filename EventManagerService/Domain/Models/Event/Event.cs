@@ -18,30 +18,33 @@ namespace EventManagerService.Domain.Models.Event
         public  DateTime StartAt {  get; private set; }
 
         public DateTime EndAt { get; private set; }
+        public int TotalSeats { get; private set; }
+        public int AvailableSeats { get; private set; }
 
-        private Event(string title, DateTime startAt, DateTime endAt, string? description = null)
+        private Event(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
         {
             Id = Guid.NewGuid();
             Title = title;
             Description = description;
             StartAt = startAt;
             EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = TotalSeats;
         }
-        public static Event Create(string title, DateTime startAt, DateTime endAt, string? description = null)
+        public static Event Create(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
             
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
-#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength,_maxTitleLength));
-#pragma warning restore CS8604 // Possible null reference argument.
             
             if (startAt >= endAt)
-#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(endAt), nameof(startAt)));
-#pragma warning restore CS8604 // Possible null reference argument.
+            //ArgumentException используется намерено, для сохранения единого вида обработки ошибки некорректного аргумента
+            if (totalSeats <= 0)
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("TotalSeatsValidationError"), nameof(totalSeats)));
                 
-            return new Event(title, startAt,endAt,description); ;
+            return new Event(title, startAt,endAt, totalSeats,description); ;
 
 
         }
@@ -51,19 +54,49 @@ namespace EventManagerService.Domain.Models.Event
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
-#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength, _maxTitleLength));
-#pragma warning restore CS8604 // Possible null reference argument.
 
             if (startAt >= endAt)
-#pragma warning disable CS8604 // Possible null reference argument.
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(endAt), nameof(startAt)));
-#pragma warning restore CS8604 // Possible null reference argument.
 
             Title = title;
             Description = description;
             StartAt = startAt;
             EndAt = endAt;
+        }
+
+        public bool TryReserveSeats(int count = 1)
+        {
+            if (count <= 0)
+            {
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(count), "0"));
+            }
+
+            if (AvailableSeats - count < 0)
+            {
+                return false;
+            }
+            else
+            {
+                AvailableSeats -= count;
+                return true;
+            }
+        }
+
+        public bool ReleaseSeats(int count = 1)
+        {
+            if (count <= 0)
+            {
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(count), "0"));
+            }
+
+            if (AvailableSeats + count > TotalSeats)
+            {
+                return false;
+            }
+
+            AvailableSeats += count;
+            return true;
         }
     }
 }

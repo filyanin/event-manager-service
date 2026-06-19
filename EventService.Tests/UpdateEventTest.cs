@@ -17,7 +17,7 @@ namespace EventService.Tests
         {
 
             eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue);
+            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
@@ -33,7 +33,7 @@ namespace EventService.Tests
         [InlineData("New Good event", "2025-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z", "Test description")]
         public void UpdateEvent_CorrectInputData_SuccessUpdateEvent(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ev = eventService.AddEvent("Event to update",DateTime.MinValue, DateTime.MaxValue);
+            var ev = eventService.AddEvent("Event to update",DateTime.MinValue, DateTime.MaxValue, 100);
 
             eventService.UpdateEvent(ev.Id, title, startAt, endAt, description);
 
@@ -57,7 +57,7 @@ namespace EventService.Tests
         [InlineData("Test event", "2027-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z")]
         public void UpdateEvent_StartDateGreaterThenEndDate_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue);
+            var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue, 100);
 
             var ex = Record.Exception(() => eventService.UpdateEvent(ev.Id,title, startAt, endAt, description));
 
@@ -72,7 +72,7 @@ namespace EventService.Tests
     "2026-04-01T11:24:14.444Z", "2026-04-02T11:24:14.444Z")]
         public void UpdateEvent_InvalidTitle_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue);
+            var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue, 100);
 
             var ex = Record.Exception(() => eventService.UpdateEvent(ev.Id, title, startAt, endAt, description));
 

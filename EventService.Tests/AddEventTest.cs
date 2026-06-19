@@ -27,8 +27,8 @@ namespace EventService.Tests
         [InlineData("Test event", "2025-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z", "Test description")]
         public void AddEvent_CorrectInputData_SuccessCreate(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            
-            var ev = eventService.AddEvent(title, startAt, endAt, description);
+
+            var ev = eventService.AddEvent(title, startAt, endAt, 100, description);
 
             Assert.NotNull(ev);
             Assert.Equal(title, ev.Title);
@@ -46,7 +46,7 @@ namespace EventService.Tests
             "2026-04-01T11:24:14.444Z", "2026-04-02T11:24:14.444Z")]
         public void AddEvent_WrongTitleString_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ex = Record.Exception(() => eventService.AddEvent(title, startAt, endAt, description));
+            var ex = Record.Exception(() => eventService.AddEvent(title, startAt, endAt, 100, description));
 
             Assert.NotNull(ex);
             Assert.IsType<ArgumentException>(ex);
@@ -60,7 +60,7 @@ namespace EventService.Tests
         [InlineData("Test event", "2027-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z")]
         public void AddEvent_StartDateGreaterThenEndDate_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ex = Record.Exception(() => eventService.AddEvent(title, startAt, endAt, description));
+            var ex = Record.Exception(() => eventService.AddEvent(title, startAt, endAt, 100, description));
 
             Assert.NotNull(ex);
             Assert.IsType<ArgumentException>(ex);

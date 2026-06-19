@@ -1,4 +1,5 @@
 ﻿using EventManagerService.Domain.Enum;
+using EventManagerService.Domain.Exceptions;
 using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Booking;
@@ -11,6 +12,7 @@ namespace EventManagerService.Domain.Services.BookingService
     {
         private List<Booking> bookings = new List<Booking>();
         private IEventService _eventService;
+        private readonly object _bookingLock = new();
 
         public BookingService(IEventService eventService)
         {
@@ -19,17 +21,31 @@ namespace EventManagerService.Domain.Services.BookingService
 
         public async Task<Booking> CreateBookingAsync(Guid eventId)
         {
-            if (!await _eventService.CheckEventById(eventId))
+            lock (_bookingLock)
             {
-                throw new KeyNotFoundException(string.Format(
-                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                if (!_eventService.CheckEventById(eventId).Result)
+                {
+                    throw new KeyNotFoundException(string.Format(
+                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                }
+
+                var @event = _eventService.GetEventById(eventId);
+
+                if (@event == null)
+                {
+                    throw new KeyNotFoundException(string.Format(
+                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                }
+
+                if (!@event.TryReserveSeats())
+                {
+                    throw new NoAvailableSeatsException("No available seats for this event");
+                }
+
+                var booking = new Booking(eventId);
+                bookings.Add(booking);
+                return booking;
             }
-                        
-            var booking = new Booking(eventId);
-
-            bookings.Add(booking);
-            return booking;               
-
         }
 
         public async Task<Booking> GetBookingByIdAsync(Guid bookingId)
