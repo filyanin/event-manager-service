@@ -26,6 +26,32 @@ namespace EventManagerService.Domain.Models.Booking
             ProcessedAt = null;
         }
 
+        public EventManagerService.Domain.Models.Event.Event? Event { get; private set; }
+
+        public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt, EventManagerService.Domain.Models.Event.Event? @event = null)
+        {
+            Id = id;
+            EventId = eventId;
+            Status = status;
+            CreatedAt = createdAt;
+            ProcessedAt = processedAt;
+            Event = @event;
+        }
+
+        public EventManagerService.Infrastructure.DataAssets.Models.Booking ConvertTo()
+        {
+            return new EventManagerService.Infrastructure.DataAssets.Models.Booking
+            {
+                Id = this.Id,
+                EventId = this.EventId,
+                Status = this.Status,
+                CreatedAt = this.CreatedAt,
+                ProcessedAt = this.ProcessedAt,
+                // Не включаем обратную ссылку на Event, чтобы избежать циклической рекурсии
+                Event = null
+            };
+        }
+
         //Логика подтверждения вынесена отдельно на случай изменения поведения в будущем
         public void SetBookingConfirmed(DateTime processedAt)
         {

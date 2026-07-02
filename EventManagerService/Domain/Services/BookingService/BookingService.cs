@@ -21,22 +21,22 @@ namespace EventManagerService.Domain.Services.BookingService
 
         public async Task<Booking> CreateBookingAsync(Guid eventId)
         {
+            if (!await _eventService.CheckEventByIdAsync(eventId))
+            {
+                throw new KeyNotFoundException(string.Format(
+                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+            }
+
+            var @event = await _eventService.GetEventByIdAsync(eventId);
+
+            if (@event == null)
+            {
+                throw new KeyNotFoundException(string.Format(
+                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+            }
+
             lock (_bookingLock)
             {
-                if (!_eventService.CheckEventById(eventId).Result)
-                {
-                    throw new KeyNotFoundException(string.Format(
-                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
-                }
-
-                var @event = _eventService.GetEventById(eventId);
-
-                if (@event == null)
-                {
-                    throw new KeyNotFoundException(string.Format(
-                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
-                }
-
                 if (!@event.TryReserveSeats())
                 {
                     throw new NoAvailableSeatsException("No available seats for this event");

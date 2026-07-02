@@ -24,27 +24,27 @@ namespace EventManagerService.Presentation.Controllers
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         
-        public ActionResult<PaginatedResult> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
+        public async Task<ActionResult<PaginatedResult>> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
         {
-            return Ok(_queryMapper.GetAllEvent(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
+            return Ok(await _queryMapper.GetAllEventAsync(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
         }
 
         [HttpGet]
         [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<OutputEventDTO> GetEventByID(Guid id)
+        public async Task<ActionResult<OutputEventDTO>> GetEventByID(Guid id)
         {
-                var _event = _queryMapper.GetEventById(id);
+                var _event = await _queryMapper.GetEventByIdAsync(id);
                 return Ok(_event);
         }
         
         [HttpPost]
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public ActionResult<OutputEventDTO> CreateEvent(InputEventDTO newEvent)
+        public async Task<ActionResult<OutputEventDTO>> CreateEvent(InputEventDTO newEvent)
         {
-            var _event = _queryMapper.AddEvent(newEvent);
+            var _event = await _queryMapper.AddEventAsync(newEvent);
             return CreatedAtAction(nameof(GetEventByID), new { id = _event.Id }, _event);
         }
 
@@ -52,9 +52,9 @@ namespace EventManagerService.Presentation.Controllers
         [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult UpdateEvent(Guid id, InputEventDTO changedEvent)
+        public async Task<ActionResult> UpdateEvent(Guid id, InputEventDTO changedEvent)
         {
-            _queryMapper.UpdateEvent(id, changedEvent);
+            await _queryMapper.UpdateEventAsync(id, changedEvent);
             return Ok();
         }
 
@@ -62,9 +62,9 @@ namespace EventManagerService.Presentation.Controllers
         [Route("events/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult DeleteEvent(Guid id) 
+        public async Task<ActionResult> DeleteEvent(Guid id) 
         {
-            _queryMapper.DeleteEvent(id);
+            await _queryMapper.DeleteEventAsync(id);
             return Ok();
 
         }

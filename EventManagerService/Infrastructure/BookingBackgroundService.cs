@@ -63,7 +63,15 @@ namespace EventManagerService.Infrastructure
                 try
                 {
                     // Проверяем, существует ли событие
-                    var @event = _eventService.GetEventById(booking.EventId);
+                    EventManagerService.Domain.Models.Event.Event? @event = null;
+                    try
+                    {
+                        @event = await _eventService.GetEventByIdAsync(booking.EventId);
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        @event = null;
+                    }
 
                     if (@event == null)
                     {
@@ -97,12 +105,16 @@ namespace EventManagerService.Infrastructure
                     await _processingSemaphore.WaitAsync(stoppingToken);
                     try
                     {
-                        var @event = _eventService.GetEventById(booking.EventId);
+                    try
+                    {
+                        var @event = await _eventService.GetEventByIdAsync(booking.EventId);
                         if (@event != null)
                         {
                             // Возвращаем место в пул
                             @event.ReleaseSeats();
                         }
+                    }
+                    catch { }
 
                         // Отклоняем бронь
                         booking.SetBookingRejected(DateTime.UtcNow);

@@ -14,10 +14,10 @@ namespace EventManagerService.Application.Services.EventService
             _eventService = eventService;
         }
 
-        public OutputEventDTO AddEvent(InputEventDTO newEvent)
+        public async Task<OutputEventDTO> AddEventAsync(InputEventDTO newEvent)
         {
 #pragma warning disable CS8629 // Тип значения, допускающего NULL, может быть NULL.
-            var outputEvent = _eventService.AddEvent(newEvent.Title,
+            var outputEvent = await _eventService.AddEventAsync(newEvent.Title,
                                                      (DateTime)newEvent.StartAt,
                                                      (DateTime)newEvent.EndAt,
                                                      (int)newEvent.TotalSeat,
@@ -27,35 +27,36 @@ namespace EventManagerService.Application.Services.EventService
             return new OutputEventDTO(outputEvent);
         }
 
-        public void DeleteEvent(Guid id)
+        public async Task DeleteEventAsync(Guid id)
         {
-            _eventService.DeleteEvent(id);
+            await _eventService.DeleteEventAsync(id);
         }
 
-        public PaginatedResult GetAllEvent(EventsFilters filters, int page, int pageSize)
+        public async Task<PaginatedResult> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
         {
             List<OutputEventDTO> resultList = new List<OutputEventDTO>();
-            int total;
 
-            foreach (var _event in _eventService.GetAllEvent(out total,filters, page, pageSize))
+            var tuple = await _eventService.GetAllEventAsync(filters, page, pageSize);
+
+            foreach (var _event in tuple.Items)
             {
                 resultList.Add(new OutputEventDTO(_event));
             }
 
-            return new PaginatedResult() { Events = resultList, Total = total, CurrentPageSize = resultList.Count, Page = page};
+            return new PaginatedResult() { Events = resultList, Total = tuple.Total, CurrentPageSize = resultList.Count, Page = page};
         }
 
-        public OutputEventDTO GetEventById(Guid id)
+        public async Task<OutputEventDTO> GetEventByIdAsync(Guid id)
         {
-            var _event = _eventService.GetEventById(id);
+            var _event = await _eventService.GetEventByIdAsync(id);
 
             return new OutputEventDTO(_event);
         }
 
-        public void UpdateEvent(Guid id, InputEventDTO updatedEvent)
+        public async Task UpdateEventAsync(Guid id, InputEventDTO updatedEvent)
         {
 #pragma warning disable CS8629 // Тип значения, допускающего NULL, может быть NULL.
-            _eventService.UpdateEvent(
+            await _eventService.UpdateEventAsync(
                 id,
                 updatedEvent.Title,
                 (DateTime)updatedEvent.StartAt,

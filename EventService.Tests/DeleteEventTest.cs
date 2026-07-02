@@ -1,5 +1,7 @@
 ﻿using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Event;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,9 +17,10 @@ namespace EventService.Tests
 
         public DeleteEventTest() 
         {
-
-            eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
+            var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
+            eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
 
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
@@ -27,24 +30,21 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void DeleteEvent_CorrectId_SuccessDelete()
+        public async Task DeleteEvent_CorrectId_SuccessDelete()
         {
 
-            var ev = eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
+            var ev = await eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
 
-            eventService.DeleteEvent(ev.Id);
+            await eventService.DeleteEventAsync(ev.Id);
 
 
             Assert.DoesNotContain<Event>(ev, eventList);
 
         }
         [Fact]
-        public void DeleteEvent_WrongId_KeyNotFoundException()
+        public async Task DeleteEvent_WrongId_KeyNotFoundException()
         {
-            var ex = Record.Exception(() => eventService.DeleteEvent(Guid.NewGuid()));
-
-            Assert.NotNull(ex);
-            Assert.IsType<KeyNotFoundException>(ex);
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => eventService.DeleteEventAsync(Guid.NewGuid()));
         }
 
     }

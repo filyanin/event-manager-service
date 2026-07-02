@@ -1,5 +1,7 @@
 ﻿using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Event;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,10 +16,10 @@ namespace EventService.Tests
 
         public GetEventByIdTest()
         {
-
-            eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
-
+            var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
+            eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
 
             //Получение приватного поля eventList для прямой проверки на наличие объекта
             Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
@@ -25,22 +27,19 @@ namespace EventService.Tests
             eventList = (List<Event>)field?.GetValue(eventService);
         }
         [Fact]
-        public void GetEventById_CorrectId_SuccessGetEvent()
+        public async Task GetEventById_CorrectId_SuccessGetEvent()
         {
-            var ev = eventService.AddEvent("Event to update", DateTime.MinValue, DateTime.MaxValue, 100);
+            var ev = await eventService.AddEventAsync("Event to update", DateTime.MinValue, DateTime.MaxValue, 100);
 
-            var anotherEvent = eventService.GetEventById(ev.Id);
+            var anotherEvent = await eventService.GetEventByIdAsync(ev.Id);
 
             Assert.NotNull(anotherEvent);
             Assert.Equal(ev.Id, anotherEvent.Id);
         }
         [Fact]
-        public void GetEventById_WrongId_KeyNotFoundException()
+        public async Task GetEventById_WrongId_KeyNotFoundException()
         {
-            var ex = Record.Exception(() => eventService.GetEventById(Guid.NewGuid()));
-
-            Assert.NotNull(ex);
-            Assert.IsType<KeyNotFoundException>(ex);
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => eventService.GetEventByIdAsync(Guid.NewGuid()));
         }
 
     }

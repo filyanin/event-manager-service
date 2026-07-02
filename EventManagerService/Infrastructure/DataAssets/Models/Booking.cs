@@ -16,7 +16,18 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Models.Event Event { get; set; }
 
-        private Booking() { }
+        public Booking() { }
+
+        public Domain.Models.Booking.Booking ConvertTo()
+        {
+            EventManagerService.Domain.Models.Event.Event? domainEvent = null;
+            if (Event != null)
+            {
+                domainEvent = Event.ConvertTo();
+            }
+
+            return new Domain.Models.Booking.Booking(Id, EventId, Status, CreatedAt, ProcessedAt, domainEvent);
+        }
 
 
     }

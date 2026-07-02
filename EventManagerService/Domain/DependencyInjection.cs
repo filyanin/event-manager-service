@@ -9,7 +9,7 @@ namespace EventManagerService.Domain
     {
         public static IServiceCollection AddDomain(this IServiceCollection services) 
         {
-            services.AddSingleton<IEventService, EventService>();
+            services.AddScoped<IEventService, EventService>();
 
             services.AddSingleton<IBookingService, BookingService>();
 
