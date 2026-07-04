@@ -107,7 +107,7 @@ namespace EventManagerService.Domain.Services.EventService
             {
                 throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
             }
-            // validate using domain logic
+
             var temp = new DomainEvent(model.Id, model.Title, model.StartAt, model.EndAt, model.TotalSeats, model.AvailableSeats, model.Description);
             temp.UpdateEvent(title, startAt, endAt, description);
 
