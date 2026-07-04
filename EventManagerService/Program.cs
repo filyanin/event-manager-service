@@ -3,6 +3,7 @@ using EventManagerService.Application;
 using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
 using EventManagerService.Presentation;
+using EventManagerService.Infrastructure.DataAssets;
 
 var builder = WebApplication.CreateBuilder(args);
 

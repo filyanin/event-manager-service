@@ -2,6 +2,8 @@
 using EventManagerService.Domain.Models.Event;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using EventManagerService.Domain;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,41 +11,44 @@ using System.Text;
 
 namespace EventService.Tests
 {
-    public  class DeleteEventTest
+    public class DeleteEventTest
     {
+        private readonly ServiceProvider _serviceProvider;
+        private readonly string _dbName;
 
-        public IEventService eventService;
-        public List<Event> eventList;
-
-        public DeleteEventTest() 
+        public DeleteEventTest()
         {
-            var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
+            _dbName = Guid.NewGuid().ToString();
+            var services = new ServiceCollection();
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
+            services.AddDomain();
+            _serviceProvider = services.BuildServiceProvider();
+
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
             eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
-
-
-            //Получение приватного поля eventList для прямой проверки на наличие объекта
-            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
-            var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
-            eventList = (List<Event>)field?.GetValue(eventService);
         }
 
         [Fact]
         public async Task DeleteEvent_CorrectId_SuccessDelete()
         {
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var ev = await eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100);
 
             await eventService.DeleteEventAsync(ev.Id);
 
-
-            Assert.DoesNotContain<Event>(ev, eventList);
+            // Проверяем, что объект удалён из БД
+            Assert.False(await context.Events.AnyAsync(e => e.Id == ev.Id));
 
         }
         [Fact]
         public async Task DeleteEvent_WrongId_KeyNotFoundException()
         {
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
             await Assert.ThrowsAsync<KeyNotFoundException>(() => eventService.DeleteEventAsync(Guid.NewGuid()));
         }
 

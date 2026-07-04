@@ -1,4 +1,7 @@
-﻿namespace EventManagerService.Infrastructure.DataAssets.Models
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace EventManagerService.Infrastructure.DataAssets.Models
 {
     public class Event
     {
@@ -14,7 +17,7 @@
         public int TotalSeats { get; set; }
         public int AvailableSeats { get; set; }
 
-        public Models.Booking[] Bookings { get; set; }
+        public ICollection<Models.Booking> Bookings { get; set; } = new List<Models.Booking>();
 
         public Event() { }
 
@@ -22,7 +25,7 @@
         {
             var domainEvent = new Domain.Models.Event.Event(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
 
-            if (Bookings != null && Bookings.Length > 0)
+            if (Bookings != null && Bookings.Any())
             {
                 var domainBookings = Bookings.Select(b => b.ConvertTo()).ToArray();
 

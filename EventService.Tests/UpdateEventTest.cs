@@ -2,30 +2,25 @@
 using EventManagerService.Domain.Models.Event;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using static System.Net.WebRequestMethods;
 
 namespace EventService.Tests
 {
     public  class UpdateEventTest
     {
         public IEventService eventService;
-        public List<Event> eventList;
+        public AppDbContext _context;
 
         public UpdateEventTest()
         {
             var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
+            _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            eventService = new EventManagerService.Domain.Services.EventService.EventService(_context);
             eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
-
-            //Получение приватного поля eventList для прямой проверки на наличие объекта
-            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
-            var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
-            eventList = (List<Event>)field?.GetValue(eventService);
         }
 
         [Theory]
@@ -39,10 +34,12 @@ namespace EventService.Tests
 
             await eventService.UpdateEventAsync(ev.Id, title, startAt, endAt, description);
 
-            Assert.Equal(title, ev.Title);
-            Assert.Equal(startAt, ev.StartAt);
-            Assert.Equal(endAt, ev.EndAt);
-            Assert.Equal(description, ev.Description);
+            var updated = await eventService.GetEventByIdAsync(ev.Id);
+
+            Assert.Equal(title, updated.Title);
+            Assert.Equal(startAt, updated.StartAt);
+            Assert.Equal(endAt, updated.EndAt);
+            Assert.Equal(description, updated.Description);
         }
         [Fact]
         public void UpdateEvent_WrongID_KeyNotFoundException()

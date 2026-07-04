@@ -2,6 +2,8 @@
 using EventManagerService.Domain.Models.Event;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using EventManagerService.Domain;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,13 +14,13 @@ namespace EventService.Tests
     public class GetAllEventTest
     {
         public IEventService eventService;
-        public List<Event> eventList;
+        public AppDbContext _context;
         public List<string> titles;
         public GetAllEventTest()
         {
             var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
+            _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            eventService = new EventManagerService.Domain.Services.EventService.EventService(_context);
             eventService.AddEventAsync("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1).GetAwaiter().GetResult();
             eventService.AddEventAsync("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1).GetAwaiter().GetResult();
             eventService.AddEventAsync("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1).GetAwaiter().GetResult();
@@ -31,17 +33,13 @@ namespace EventService.Tests
             titles.Add("Simple Event To Test");
             titles.Add("Gooooood Event To Test");
             titles.Add("Simple Event");
-
-            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
-            var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
-            eventList = (List<Event>)field?.GetValue(eventService);
         }
         [Fact] 
         public async Task GetAllEvent_EmptyFilters_SuccessGetAllEvents()
         {
             var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, null), 1, 10);
-
-            Assert.Equal(eventList.Count, tuple.Total);
+            var total = await _context.Events.CountAsync();
+            Assert.Equal(total, tuple.Total);
             Assert.All(tuple.Items, e => titles.Contains(e.Title));
         }
         [Fact]

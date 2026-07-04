@@ -2,6 +2,8 @@
 using EventManagerService.Domain.Models.Event;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using EventManagerService.Domain;
 using System.Reflection;
 using Xunit;
 
@@ -10,18 +12,16 @@ namespace EventService.Tests
 {
     public class AddEventTest
     {
-        public IEventService eventService;
-        public List<Event> eventsList;  
+        private readonly ServiceProvider _serviceProvider;
+        private readonly string _dbName;
+
         public AddEventTest()
         {
-            var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-            var context = new AppDbContext(options);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(context);
-
-            //Получение приватного поля eventList для прямой проверки на наличие объекта
-            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
-            var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
-            eventsList = (List<Event>)field?.GetValue(eventService);
+            _dbName = Guid.NewGuid().ToString();
+            var services = new ServiceCollection();
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
+            services.AddDomain();
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         [Theory]
@@ -31,6 +31,10 @@ namespace EventService.Tests
         [InlineData("Test event", "2025-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z", "Test description")]
         public async Task AddEvent_CorrectInputData_SuccessCreate(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             var ev = await eventService.AddEventAsync(title, startAt, endAt, 100, description);
 
             Assert.NotNull(ev);
@@ -38,7 +42,7 @@ namespace EventService.Tests
             Assert.Equal(startAt, ev.StartAt);
             Assert.Equal(endAt, ev.EndAt);
             Assert.Equal(description, ev.Description);
-            Assert.Contains(ev,eventsList);
+            Assert.True(await context.Events.AnyAsync(e => e.Id == ev.Id));
         }
         
         
@@ -49,6 +53,8 @@ namespace EventService.Tests
             "2026-04-01T11:24:14.444Z", "2026-04-02T11:24:14.444Z")]
         public async Task AddEvent_WrongTitleString_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
             await Assert.ThrowsAsync<ArgumentException>(() => eventService.AddEventAsync(title, startAt, endAt, 100, description));
         }
 
@@ -60,6 +66,8 @@ namespace EventService.Tests
         [InlineData("Test event", "2027-04-01T11:24:14.444Z", "2026-04-01T11:24:14.444Z")]
         public async Task AddEvent_StartDateGreaterThenEndDate_ArgumentException(string title, DateTime startAt, DateTime endAt, string? description = null)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
             await Assert.ThrowsAsync<ArgumentException>(() => eventService.AddEventAsync(title, startAt, endAt, 100, description));
         }
     }

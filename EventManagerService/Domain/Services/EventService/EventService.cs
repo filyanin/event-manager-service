@@ -17,7 +17,6 @@ namespace EventManagerService.Domain.Services.EventService
     public class EventService : IEventService
     {
         private readonly AppDbContext _context;
-        private readonly List<DomainEvent> events = new List<DomainEvent>();
 
         public EventService(AppDbContext context)
         {
@@ -34,18 +33,10 @@ namespace EventManagerService.Domain.Services.EventService
         {
             var ev = DomainEvent.Create(title, startAt, endAt, totalSeats, description);
 
-            try
-            {
-                var model = ev.ConvertTo();
-                await _context.Events.AddAsync(model);
-                await _context.SaveChangesAsync();
-                return model.ConvertTo();
-            }
-            catch
-            {
-                events.Add(ev);
-                return ev;
-            }
+            var model = ev.ConvertTo();
+            await _context.Events.AddAsync(model);
+            await _context.SaveChangesAsync();
+            return model.ConvertTo();
         }
 
         public void DeleteEvent(Guid id)
@@ -55,27 +46,14 @@ namespace EventManagerService.Domain.Services.EventService
 
         public async Task DeleteEventAsync(Guid id)
         {
-            try
+            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+            if (model == null)
             {
-                var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-                if (model == null)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-                _context.Events.Remove(model);
-                await _context.SaveChangesAsync();
-                return;
+                throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
             }
-            catch
-            {
-                int index = events.FindIndex(e => e.Id.Equals(id));
-                if (index == -1)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-
-                events.RemoveAt(index);
-            }
+            _context.Events.Remove(model);
+            await _context.SaveChangesAsync();
+            return;
         }
 
         public async Task<(IReadOnlyList<DomainEvent> list, int total)> GetAllEventAsync_Internal(EventsFilters filters, int page, int pageSize)
@@ -90,117 +68,62 @@ namespace EventManagerService.Domain.Services.EventService
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("PageSizeException"), pageSize));
             }
 
-            try
+            IQueryable<DataEvent> dbQuery = _context.Events;
+
+            if (!string.IsNullOrEmpty(filters.Title))
             {
-                IQueryable<DataEvent> dbQuery = _context.Events;
-
-                if (!string.IsNullOrEmpty(filters.Title))
-                {
-                    var title = filters.Title.ToLower();
-                    dbQuery = dbQuery.Where(e => e.Title.ToLower().Contains(title));
-                }
-                if (filters.From != null)
-                {
-                    dbQuery = dbQuery.Where(e => e.StartAt >= filters.From.Value);
-                }
-                if (filters.To != null)
-                {
-                    dbQuery = dbQuery.Where(e => e.EndAt <= filters.To.Value);
-                }
-
-                var total = await dbQuery.CountAsync();
-                var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-                var domainItems = items.Select(i => i.ConvertTo()).ToList().AsReadOnly();
-                return (domainItems, total);
+                var title = filters.Title.ToLower();
+                dbQuery = dbQuery.Where(e => e.Title.ToLower().Contains(title));
             }
-            catch
+            if (filters.From != null)
             {
-                IEnumerable<DomainEvent> query = events;
-
-                if (!string.IsNullOrEmpty(filters.Title))
-                {
-                    query = query.Where(e => e.Title.ToLower().Contains(filters.Title.ToLower()));
-                }
-                if (filters.From != null)
-                {
-                    query = query.Where(e => e.StartAt >= filters.From);
-                }
-                if (filters.To != null)
-                {
-                    query = query.Where(e => e.EndAt <= filters.To);
-                }
-
-                var tot = query.Count();
-                var list = query.Skip((page - 1) * pageSize).Take(pageSize).ToList().AsReadOnly();
-                return (list, tot);
+                dbQuery = dbQuery.Where(e => e.StartAt >= filters.From.Value);
             }
+            if (filters.To != null)
+            {
+                dbQuery = dbQuery.Where(e => e.EndAt <= filters.To.Value);
+            }
+
+            var total = await dbQuery.CountAsync();
+            var items = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            var domainItems = items.Select(i => i.ConvertTo()).ToList().AsReadOnly();
+            return (domainItems, total);
         }
 
         public async Task<DomainEvent> GetEventByIdAsync(Guid id)
         {
-            try
+            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+            if (model == null)
             {
-                var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-                if (model == null)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-                return model.ConvertTo();
+                throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
             }
-            catch
-            {
-                int index = events.FindIndex(e => e.Id.Equals(id));
-                if (index == -1)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-                return events[index];
-            }
+            return model.ConvertTo();
         }
 
         public async Task UpdateEventAsync(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            try
+            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+            if (model == null)
             {
-                var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-                if (model == null)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-                // validate using domain logic
-                var temp = new DomainEvent(model.Id, model.Title, model.StartAt, model.EndAt, model.TotalSeats, model.AvailableSeats, model.Description);
-                temp.UpdateEvent(title, startAt, endAt, description);
-
-                model.Title = title;
-                model.Description = description;
-                model.StartAt = startAt;
-                model.EndAt = endAt;
-
-                _context.Events.Update(model);
-                await _context.SaveChangesAsync();
-                return;
+                throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
             }
-            catch
-            {
-                int index = events.FindIndex(e => e.Id.Equals(id));
-                if (index == -1)
-                {
-                    throw new KeyNotFoundException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), id));
-                }
-                events[index].UpdateEvent(title, startAt, endAt, description);
-            }
+            // validate using domain logic
+            var temp = new DomainEvent(model.Id, model.Title, model.StartAt, model.EndAt, model.TotalSeats, model.AvailableSeats, model.Description);
+            temp.UpdateEvent(title, startAt, endAt, description);
+
+            model.Title = title;
+            model.Description = description;
+            model.StartAt = startAt;
+            model.EndAt = endAt;
+
+            _context.Events.Update(model);
+            await _context.SaveChangesAsync();
+            return;
         }
 
         public async Task<bool> CheckEventByIdAsync(Guid id)
         {
-            try
-            {
-                return await _context.Events.AnyAsync(e => e.Id == id);
-            }
-            catch
-            {
-                return events.Any(e => e.Id.Equals(id));
-            }
+            return await _context.Events.AnyAsync(e => e.Id == id);
         }
     }
 }

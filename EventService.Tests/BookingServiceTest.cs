@@ -11,6 +11,8 @@ using EventManagerService.Domain.Services.BookingService;
 using EventManagerService.Domain.Services.EventService;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using EventManagerService.Domain;
 using Xunit;
 
 namespace EventService.Tests
@@ -23,22 +25,25 @@ namespace EventService.Tests
 
         public BookingServiceTest()
         {
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            var dbName = Guid.NewGuid().ToString();
+            var services = new ServiceCollection();
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(dbName));
+            services.AddDomain();
+            var provider = services.BuildServiceProvider();
 
-            _context = new AppDbContext(options);
-            _eventService = new EventManagerService.Domain.Services.EventService.EventService(_context);
-            _bookingService = new EventManagerService.Domain.Services.BookingService.BookingService(_context);
+            // keep context for some direct DB manipulations in tests
+            _context = provider.GetRequiredService<AppDbContext>();
+            _eventService = provider.GetRequiredService<IEventService>();
+            _bookingService = provider.GetRequiredService<IBookingService>();
         }
 
-        private Event CreateTestEvent(Guid eventId, int totalSeats = 100)
+        private EventManagerService.Infrastructure.DataAssets.Models.Event CreateTestEvent(Guid eventId, int totalSeats = 100)
         {
             var domainEvent = new Event(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
             var model = domainEvent.ConvertTo();
             _context.Events.Add(model);
             _context.SaveChanges();
-            return domainEvent;
+            return model;
         }
 
         private void ReleaseSeatsInDb(Guid eventId, int count = 1)
@@ -240,10 +245,10 @@ namespace EventService.Tests
             await _bookingService.CreateBookingAsync(evId);
             Assert.Equal(totalSeats - 3, @event.AvailableSeats);
 
-            // Release 2 seats
-            bool released = @event.ReleaseSeats(2);
-            Assert.True(released);
-            Assert.Equal(totalSeats - 1, @event.AvailableSeats);
+            // Release 2 seats via DB helper
+            ReleaseSeatsInDb(evId, 2);
+            var modelAfterRelease = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(totalSeats - 1, modelAfterRelease.AvailableSeats);
         }
 
         [Fact]
@@ -262,10 +267,11 @@ namespace EventService.Tests
             await Assert.ThrowsAsync<NoAvailableSeatsException>(
                 () => _bookingService.CreateBookingAsync(evId));
 
-            // Reject one booking and release seats
+            // Reject one booking and release seats in DB
             await _bookingService.RejectBookingAsync(b1.Id);
-            @event.ReleaseSeats();
-            Assert.Equal(1, @event.AvailableSeats);
+            ReleaseSeatsInDb(evId, 1);
+            var modelAfterRelease = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(1, modelAfterRelease.AvailableSeats);
 
             // Now we should be able to create a new booking
             var b3 = await _bookingService.CreateBookingAsync(evId);
@@ -316,11 +322,16 @@ namespace EventService.Tests
             var @event = CreateTestEvent(evId, 1);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
-            Assert.Equal(0, @event.AvailableSeats);
+
+            // After reservation, check DB model
+            var modelAfterBooking = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(0, modelAfterBooking.AvailableSeats);
 
             await _bookingService.RejectBookingAsync(booking.Id);
-            @event.ReleaseSeats();
-            Assert.Equal(1, @event.AvailableSeats);
+            // release seats in DB helper
+            ReleaseSeatsInDb(evId, 1);
+            var modelAfterRelease = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(1, modelAfterRelease.AvailableSeats);
 
             var newBooking = await _bookingService.CreateBookingAsync(evId);
             Assert.NotNull(newBooking);

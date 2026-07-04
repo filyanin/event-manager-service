@@ -15,23 +15,21 @@ namespace EventManagerService.Domain.Services.BookingService
         private readonly AppDbContext _context;
         private static readonly SemaphoreSlim _bookingSemaphore = new SemaphoreSlim(1, 1);
 
-        public BookingService(AppDbContext context)
-        {
-            _context = context;
-        }
+        public BookingService(AppDbContext context) =>
+            _context = context ?? throw new ArgumentNullException(nameof(context));
 
         public async Task<Booking> CreateBookingAsync(Guid eventId)
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            if (model == null)
-            {
-                throw new KeyNotFoundException(string.Format(
-                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
-            }
-
             await _bookingSemaphore.WaitAsync();
             try
             {
+                var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
+                if (model == null)
+                {
+                    throw new KeyNotFoundException(string.Format(
+                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                }
+
                 if (model.AvailableSeats <= 0)
                 {
                     throw new NoAvailableSeatsException("No available seats for this event");

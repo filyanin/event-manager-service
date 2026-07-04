@@ -20,13 +20,8 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Domain.Models.Booking.Booking ConvertTo()
         {
-            EventManagerService.Domain.Models.Event.Event? domainEvent = null;
-            if (Event != null)
-            {
-                domainEvent = Event.ConvertTo();
-            }
-
-            return new Domain.Models.Booking.Booking(Id, EventId, Status, CreatedAt, ProcessedAt, domainEvent);
+            // Avoid converting the related Event here to prevent cyclical recursion.
+            return new Domain.Models.Booking.Booking(Id, EventId, Status, CreatedAt, ProcessedAt, null);
         }
 
 
