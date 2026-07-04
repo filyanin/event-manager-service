@@ -8,27 +8,45 @@ using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Models.Booking;
 using EventManagerService.Domain.Models.Event;
 using EventManagerService.Domain.Services.BookingService;
-using Moq;
+using EventManagerService.Domain.Services.EventService;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace EventService.Tests
 {
     public class BookingServiceTest
     {
-        private readonly Mock<IEventService> _eventServiceMock;
+        private readonly AppDbContext _context;
+        private readonly IEventService _eventService;
         private readonly IBookingService _bookingService;
 
         public BookingServiceTest()
         {
-            _eventServiceMock = new Mock<IEventService>();
-            _bookingService = new BookingService(_eventServiceMock.Object);
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
+
+            _context = new AppDbContext(options);
+            _eventService = new EventManagerService.Domain.Services.EventService.EventService(_context);
+            _bookingService = new EventManagerService.Domain.Services.BookingService.BookingService(_context);
         }
 
         private Event CreateTestEvent(Guid eventId, int totalSeats = 100)
         {
-            var @event = Event.Create("Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats);
-            _eventServiceMock.Setup(s => s.GetEventByIdAsync(eventId)).ReturnsAsync(@event);
-            return @event;
+            var domainEvent = new Event(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
+            var model = domainEvent.ConvertTo();
+            _context.Events.Add(model);
+            _context.SaveChanges();
+            return domainEvent;
+        }
+
+        private void ReleaseSeatsInDb(Guid eventId, int count = 1)
+        {
+            var model = _context.Events.First(e => e.Id == eventId);
+            model.AvailableSeats = Math.Min(model.TotalSeats, model.AvailableSeats + count);
+            _context.Events.Update(model);
+            _context.SaveChanges();
         }
 
         #region Basic Booking Tests
@@ -37,7 +55,6 @@ namespace EventService.Tests
         public async Task CreateBooking_EventExists_CreatesBooking()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -54,8 +71,6 @@ namespace EventService.Tests
         public async Task CreateBooking_EventNotExists_ThrowsKeyNotFoundException()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(false);
-
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.CreateBookingAsync(evId));
         }
 
@@ -63,7 +78,6 @@ namespace EventService.Tests
         public async Task ConfirmBooking_ExistingBooking_ChangesStatusToConfirmed()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -79,7 +93,6 @@ namespace EventService.Tests
         public async Task RejectBooking_ExistingBooking_ChangesStatusToRejected()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -101,7 +114,6 @@ namespace EventService.Tests
         public async Task CreateMultipleBookings_SameEvent_UniqueIds()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var b1 = await _bookingService.CreateBookingAsync(evId);
@@ -116,11 +128,15 @@ namespace EventService.Tests
         public async Task CreateBooking_EventDeletedBetweenCalls_SecondCreateThrows()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.SetupSequence(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true).ReturnsAsync(false);
             CreateTestEvent(evId);
 
             var first = await _bookingService.CreateBookingAsync(evId);
             Assert.NotNull(first);
+
+            // Simulate event deletion between calls
+            var model = _context.Events.First(e => e.Id == evId);
+            _context.Events.Remove(model);
+            _context.SaveChanges();
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.CreateBookingAsync(evId));
         }
@@ -136,7 +152,6 @@ namespace EventService.Tests
         {
             var ev1 = Guid.NewGuid();
             var ev2 = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(It.IsAny<Guid>())).ReturnsAsync(true);
             CreateTestEvent(ev1);
             CreateTestEvent(ev2);
 
@@ -163,7 +178,6 @@ namespace EventService.Tests
         public async Task CreateBooking_DecreasesAvailableSeats()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, 100);
             int initialSeats = @event.AvailableSeats;
 
@@ -178,7 +192,6 @@ namespace EventService.Tests
         {
             var evId = Guid.NewGuid();
             int totalSeats = 5;
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, totalSeats);
 
             var bookings = new List<Booking>();
@@ -201,7 +214,6 @@ namespace EventService.Tests
         public async Task CreateBooking_ExhaustedSeats_ThrowsNoAvailableSeatsException()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, 1);
 
             // Create first booking - succeeds
@@ -220,7 +232,6 @@ namespace EventService.Tests
         {
             var evId = Guid.NewGuid();
             int totalSeats = 10;
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, totalSeats);
 
             // Reserve 3 seats
@@ -240,7 +251,6 @@ namespace EventService.Tests
         {
             var evId = Guid.NewGuid();
             int totalSeats = 2;
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, totalSeats);
 
             // Create 2 bookings - exhausts seats
@@ -271,7 +281,6 @@ namespace EventService.Tests
         public async Task ConfirmBooking_FillsProcessedAt()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -288,7 +297,6 @@ namespace EventService.Tests
         public async Task RejectBooking_FillsProcessedAt()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -305,7 +313,6 @@ namespace EventService.Tests
         public async Task RejectBooking_ReleaseSeats_EnablesNewBooking()
         {
             var evId = Guid.NewGuid();
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, 1);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
@@ -331,7 +338,6 @@ namespace EventService.Tests
             int totalSeats = 5;
             int requestCount = 20;
 
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, totalSeats);
 
             var tasks = new List<Task<(bool Success, Guid? BookingId)>>();
@@ -368,7 +374,6 @@ namespace EventService.Tests
             var evId = Guid.NewGuid();
             int requestCount = 10;
 
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId, requestCount);
 
             var tasks = new List<Task<Booking>>();
@@ -400,7 +405,6 @@ namespace EventService.Tests
             var evId = Guid.NewGuid();
             int totalSeats = 15;
 
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             var @event = CreateTestEvent(evId, totalSeats);
 
             var tasks = new List<Task<(bool Success, int ReservedSeats)>>();
@@ -437,7 +441,6 @@ namespace EventService.Tests
             int totalSeats = 100;
             int requestCount = 1000;
 
-            _eventServiceMock.Setup(s => s.CheckEventByIdAsync(evId)).ReturnsAsync(true);
             CreateTestEvent(evId, totalSeats);
 
             var tasks = new List<Task<(bool Success, Guid? BookingId)>>();

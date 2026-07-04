@@ -11,7 +11,7 @@ namespace EventManagerService.Domain
         {
             services.AddScoped<IEventService, EventService>();
 
-            services.AddSingleton<IBookingService, BookingService>();
+            services.AddScoped<IBookingService, BookingService>();
 
             return services;
         }
