@@ -86,7 +86,7 @@ namespace EventManagerService.Infrastructure
                 }
                 catch (KeyNotFoundException)
                 {
-                    _logger.LogWarning($"Booking {bookingId} not found when processing");
+                    _logger.LogWarning(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingNotFoundWhenProcessing"), bookingId);
                     return;
                 }
 
@@ -106,22 +106,22 @@ namespace EventManagerService.Infrastructure
                     // Событие было удалено - отклоняем бронь
                     booking.SetBookingRejected(DateTime.UtcNow);
                     await bookingService.RejectBookingAsync(booking.Id);
-                    _logger.LogWarning($"Event {booking.EventId} not found. Booking {booking.Id} rejected.");
+                    _logger.LogWarning(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("EventNotFoundBookingRejected"), booking.EventId, booking.Id);
                     return;
                 }
 
                 // Событие существует - подтверждаем бронь
                 booking.SetBookingConfirmed(DateTime.UtcNow);
                 await bookingService.ConfirmBookingAsync(booking.Id);
-                _logger.LogInformation($"Booking {booking.Id} confirmed successfully");
+                _logger.LogInformation(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingConfirmed"), booking.Id);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation($"Booking {bookingId} processing cancelled");
+                _logger.LogInformation(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingProcessingCancelled"), bookingId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error processing booking {bookingId}. Rejecting and releasing seats");
+                _logger.LogError(ex, new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingProcessingErrorRejecting"), bookingId);
                 try
                 {
                     // Пытаемся отклонить бронь и вернуть места — выполняем в собственном scope
@@ -147,14 +147,14 @@ namespace EventManagerService.Infrastructure
                         bookingToHandle.SetBookingRejected(DateTime.UtcNow);
                         await bookingService.RejectBookingAsync(bookingToHandle.Id);
                     }
-                    catch (KeyNotFoundException)
-                    {
-                        _logger.LogWarning($"Booking {bookingId} not found when attempting to release resources");
-                    }
+                        catch (KeyNotFoundException)
+                        {
+                            _logger.LogWarning(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingNotFoundWhenReleasing"), bookingId);
+                        }
                 }
                 catch (Exception releaseEx)
                 {
-                    _logger.LogError(releaseEx, $"Failed to release resources for booking {bookingId}");
+                    _logger.LogError(releaseEx, new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("FailedToReleaseResources"), bookingId);
                 }
             }
         }

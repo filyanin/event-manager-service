@@ -27,12 +27,12 @@ namespace EventManagerService.Domain.Services.BookingService
                 if (model == null)
                 {
                     throw new KeyNotFoundException(string.Format(
-                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                        ErrorMessages.ObjectNotFound, eventId));
                 }
 
                 if (model.AvailableSeats <= 0)
                 {
-                    throw new NoAvailableSeatsException("No available seats for this event");
+                    throw new NoAvailableSeatsException();
                 }
 
                 model.AvailableSeats -= 1;
@@ -64,7 +64,7 @@ namespace EventManagerService.Domain.Services.BookingService
             if (model == null)
             {
                 throw new KeyNotFoundException(string.Format(
-                   new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
+                   ErrorMessages.ObjectNotFound, bookingId));
             }
 
             return model.ConvertTo();

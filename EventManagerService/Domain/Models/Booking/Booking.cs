@@ -16,7 +16,7 @@ namespace EventManagerService.Domain.Models.Booking
 
         public DateTime? ProcessedAt { get; private set; }
 
-        // Конструктор не приватный, т.к. В нём нет логики 
+        // Конструктор не приватный, т.к. в нём нет логики
         public Booking(Guid eventId)
         {
             Id = Guid.NewGuid();
@@ -52,7 +52,7 @@ namespace EventManagerService.Domain.Models.Booking
             };
         }
 
-        //Логика подтверждения вынесена отдельно на случай изменения поведения в будущем
+        // Логика подтверждения вынесена отдельно на случай изменения поведения в будущем
         public void SetBookingConfirmed(DateTime processedAt)
         {
             if (!Status.Equals(BookingStatus.Pending))
@@ -65,7 +65,7 @@ namespace EventManagerService.Domain.Models.Booking
             ProcessedAt = processedAt;
         }
 
-        //Логика отмены вынесена отдельно на случай изменения поведения в будущем
+        // Логика отмены вынесена отдельно на случай изменения поведения в будущем
         public void SetBookingRejected(DateTime rejectedAt)
         {
             if (!Status.Equals(BookingStatus.Pending))

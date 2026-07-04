@@ -1,12 +1,15 @@
+using EventManagerService.Properties;
+using System.Resources;
+
 namespace EventManagerService.Domain.Exceptions
 {
     public class NoAvailableSeatsException : Exception
     {
-        public NoAvailableSeatsException(string message) : base(message)
+        public NoAvailableSeatsException() : base(new ResourceManager(typeof(ErrorMessages)).GetString("NoAvailableSeatsError"))
         {
         }
 
-        public NoAvailableSeatsException(string message, Exception innerException) : base(message, innerException)
+        public NoAvailableSeatsException(Exception innerException) : base(new ResourceManager(typeof(ErrorMessages)).GetString("NoAvailableSeatsError"), innerException)
         {
         }
     }

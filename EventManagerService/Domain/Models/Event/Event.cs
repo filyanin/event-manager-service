@@ -1,6 +1,4 @@
 ﻿using EventManagerService.Properties;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
 using System.Resources;
 
 namespace EventManagerService.Domain.Models.Event

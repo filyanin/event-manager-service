@@ -33,14 +33,12 @@ namespace EventManagerService.Infrastructure
         public async Task HandleException (HttpContext context, Exception ex)
         {
 
-            _logger.LogError(
-                ex,
-#pragma warning disable CS8604 // Possible null reference argument.
-                new ResourceManager(typeof(ErrorMessages)).GetString("UnhandledException"),
-#pragma warning restore CS8604 // Possible null reference argument.
-                context.Request.Method,
-                context.Request.Path,
-                context.Request.Headers["x-request-id"]);
+                _logger.LogError(
+                    ex,
+                    ErrorMessages.UnhandledException,
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.Request.Headers["x-request-id"]);
 
             if (context.Response.HasStarted)
             {
