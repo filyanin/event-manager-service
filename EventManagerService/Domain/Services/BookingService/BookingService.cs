@@ -1,95 +1,119 @@
 ﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Exceptions;
 using EventManagerService.Domain.Interfaces.BookingService;
-using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Booking;
 using EventManagerService.Properties;
 using System.Resources;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
+using System.Threading;
 
 namespace EventManagerService.Domain.Services.BookingService
 {
     public class BookingService : IBookingService
     {
-        private List<Booking> bookings = new List<Booking>();
-        private IEventService _eventService;
-        private readonly object _bookingLock = new();
+        private readonly AppDbContext _context;
+        private static readonly SemaphoreSlim _bookingSemaphore = new SemaphoreSlim(1, 1);
 
-        public BookingService(IEventService eventService)
-        {
-            _eventService = eventService;
-        }
+        public BookingService(AppDbContext context) =>
+            _context = context ?? throw new ArgumentNullException(nameof(context));
 
         public async Task<Booking> CreateBookingAsync(Guid eventId)
         {
-            lock (_bookingLock)
+            await _bookingSemaphore.WaitAsync();
+            try
             {
-                if (!_eventService.CheckEventById(eventId).Result)
+                var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
+                if (model == null)
                 {
                     throw new KeyNotFoundException(string.Format(
-                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                        ErrorMessages.ObjectNotFound, eventId));
                 }
 
-                var @event = _eventService.GetEventById(eventId);
-
-                if (@event == null)
+                if (model.AvailableSeats <= 0)
                 {
-                    throw new KeyNotFoundException(string.Format(
-                        new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), eventId));
+                    throw new NoAvailableSeatsException();
                 }
 
-                if (!@event.TryReserveSeats())
+                model.AvailableSeats -= 1;
+
+                var bookingModel = new Infrastructure.DataAssets.Models.Booking
                 {
-                    throw new NoAvailableSeatsException("No available seats for this event");
-                }
+                    Id = Guid.NewGuid(),
+                    EventId = eventId,
+                    Status = BookingStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    Event = model
+                };
 
-                var booking = new Booking(eventId);
-                bookings.Add(booking);
-                return booking;
+                await _context.Bookings.AddAsync(bookingModel);
+                await _context.SaveChangesAsync();
+
+                return bookingModel.ConvertTo();
+            }
+            finally
+            {
+                _bookingSemaphore.Release();
             }
         }
 
         public async Task<Booking> GetBookingByIdAsync(Guid bookingId)
         {
-            int index = await Task.FromResult(bookings.FindIndex(b => b.Id == bookingId));
-      
-            if (index == -1)
+            var model = await _context.Bookings.Include(b => b.Event).FirstOrDefaultAsync(b => b.Id == bookingId);
+
+            if (model == null)
             {
                 throw new KeyNotFoundException(string.Format(
-                   new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
+                   ErrorMessages.ObjectNotFound, bookingId));
             }
 
-            return bookings[index];
+            return model.ConvertTo();
         }
 
         public async Task<List<Booking>> GetBookingByStateAsync(BookingStatus state)
         {
-            return await Task.FromResult(bookings.Where(b => b.Status == state).ToList());
+            var items = await _context.Bookings.Include(b => b.Event).Where(b => b.Status == state).ToListAsync();
+            return items.Select(i => i.ConvertTo()).ToList();
         }
 
         public async Task ConfirmBookingAsync(Guid bookingId)
         {
-            int index = await Task.FromResult(bookings.FindIndex(b => b.Id == bookingId));
+            var model = await _context.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId);
 
-            if (index == -1)
+            if (model == null)
             {
                 throw new KeyNotFoundException(string.Format(
                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
             }
 
-            bookings[index].SetBookingConfirmed(DateTime.UtcNow);
+            var domainBooking = model.ConvertTo();
+            domainBooking.SetBookingConfirmed(DateTime.UtcNow);
+
+            model.Status = domainBooking.Status;
+            model.ProcessedAt = domainBooking.ProcessedAt;
+
+            _context.Bookings.Update(model);
+            await _context.SaveChangesAsync();
         }
 
         public async Task RejectBookingAsync(Guid bookingId)
         {
-            int index = await Task.FromResult(bookings.FindIndex(b => b.Id == bookingId));
+            var model = await _context.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId);
 
-            if (index == -1)
+            if (model == null)
             {
                 throw new KeyNotFoundException(string.Format(
                    new ResourceManager(typeof(ErrorMessages)).GetString("ObjectNotFound"), bookingId));
             }
 
-            bookings[index].SetBookingRejected(DateTime.UtcNow);
+            var domainBooking = model.ConvertTo();
+            domainBooking.SetBookingRejected(DateTime.UtcNow);
+
+            model.Status = domainBooking.Status;
+            model.ProcessedAt = domainBooking.ProcessedAt;
+
+            _context.Bookings.Update(model);
+            await _context.SaveChangesAsync();
         }
     }
 }

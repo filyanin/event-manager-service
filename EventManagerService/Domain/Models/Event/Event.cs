@@ -1,6 +1,4 @@
 ﻿using EventManagerService.Properties;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
 using System.Resources;
 
 namespace EventManagerService.Domain.Models.Event
@@ -30,6 +28,17 @@ namespace EventManagerService.Domain.Models.Event
             EndAt = endAt;
             TotalSeats = totalSeats;
             AvailableSeats = TotalSeats;
+        }
+
+        public Event(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
+        {
+            Id = id;
+            Title = title;
+            Description = description;
+            StartAt = startAt;
+            EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = availableSeats;
         }
         public static Event Create(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
         {
@@ -97,6 +106,21 @@ namespace EventManagerService.Domain.Models.Event
 
             AvailableSeats += count;
             return true;
+        }
+
+        public EventManagerService.Infrastructure.DataAssets.Models.Event ConvertTo()
+        {
+            return new EventManagerService.Infrastructure.DataAssets.Models.Event
+            {
+                Id = this.Id,
+                Title = this.Title,
+                Description = this.Description,
+                StartAt = this.StartAt,
+                EndAt = this.EndAt,
+                TotalSeats = this.TotalSeats,
+                AvailableSeats = this.AvailableSeats,
+                Bookings = null
+            };
         }
     }
 }

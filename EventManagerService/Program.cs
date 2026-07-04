@@ -3,6 +3,7 @@ using EventManagerService.Application;
 using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
 using EventManagerService.Presentation;
+using EventManagerService.Infrastructure.DataAssets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,12 @@ builder.Services.AddDomain();
 builder.Services.AddPresentation();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionHandlingMiddleware>();

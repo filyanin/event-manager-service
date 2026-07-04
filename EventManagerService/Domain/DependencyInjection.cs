@@ -9,9 +9,11 @@ namespace EventManagerService.Domain
     {
         public static IServiceCollection AddDomain(this IServiceCollection services) 
         {
-            services.AddSingleton<IEventService, EventService>();
+            services.AddScoped<IEventService, EventService>();
 
-            services.AddSingleton<IBookingService, BookingService>();
+            services.AddScoped<IBookingService, BookingService>();
+
+            // AppDbContext is registered in Infrastructure as scoped; domain services depend on it and must be scoped as well.
 
             return services;
         }

@@ -1,5 +1,9 @@
 ﻿using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Event;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using EventManagerService.Domain;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -10,17 +14,18 @@ namespace EventService.Tests
     public class GetAllEventTest
     {
         public IEventService eventService;
-        public List<Event> eventList;
+        public AppDbContext _context;
         public List<string> titles;
         public GetAllEventTest()
         {
-
-            eventService = new EventManagerService.Domain.Services.EventService.EventService();
-            eventService.AddEvent("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1);
-            eventService.AddEvent("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1);
-            eventService.AddEvent("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1);
-            eventService.AddEvent("Gooooood Event To Test", DateTime.Parse("2026-04-04T11:24:14.444Z"), DateTime.Parse("2026-04-05T11:24:14.444Z"), 1);
-            eventService.AddEvent("Simple Event", DateTime.Parse("2026-04-05T11:24:14.444Z"), DateTime.Parse("2026-04-06T11:24:14.444Z"), 1);
+            var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            eventService = new EventManagerService.Domain.Services.EventService.EventService(_context);
+            eventService.AddEventAsync("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1).GetAwaiter().GetResult();
+            eventService.AddEventAsync("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1).GetAwaiter().GetResult();
+            eventService.AddEventAsync("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1).GetAwaiter().GetResult();
+            eventService.AddEventAsync("Gooooood Event To Test", DateTime.Parse("2026-04-04T11:24:14.444Z"), DateTime.Parse("2026-04-05T11:24:14.444Z"), 1).GetAwaiter().GetResult();
+            eventService.AddEventAsync("Simple Event", DateTime.Parse("2026-04-05T11:24:14.444Z"), DateTime.Parse("2026-04-06T11:24:14.444Z"), 1).GetAwaiter().GetResult();
 
             titles = new List<string>();
             titles.Add("Good Event To Test");
@@ -28,23 +33,17 @@ namespace EventService.Tests
             titles.Add("Simple Event To Test");
             titles.Add("Gooooood Event To Test");
             titles.Add("Simple Event");
-
-            Type type = typeof(EventManagerService.Domain.Services.EventService.EventService);
-            var field = type.GetField("events", BindingFlags.Instance | BindingFlags.NonPublic);
-            eventList = (List<Event>)field?.GetValue(eventService);
         }
         [Fact] 
-        public void GetAllEvent_EmptyFilters_SuccessGetAllEvents()
+        public async Task GetAllEvent_EmptyFilters_SuccessGetAllEvents()
         {
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(null, null, null), 1, 10);
-
-            Assert.Equal(eventList.Count, totalCount);
-            Assert.All(result, e => titles.Contains(e.Title));
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, null), 1, 10);
+            var total = await _context.Events.CountAsync();
+            Assert.Equal(total, tuple.Total);
+            Assert.All(tuple.Items, e => titles.Contains(e.Title));
         }
         [Fact]
-        public void GetAllEvent_FilterByTitle_SuccessGetFilteredEvents()
+        public async Task GetAllEvent_FilterByTitle_SuccessGetFilteredEvents()
         {
             var searchSubstring = "Goo";
             List<string> expectedResult = new List<string>
@@ -59,18 +58,16 @@ namespace EventService.Tests
                 "Simple Event"
             };
 
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(searchSubstring, null, null), 1, 10);
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(searchSubstring, null, null), 1, 10);
 
-            Assert.Equal(expectedResult.Count, totalCount);
-            Assert.All(result, e => expectedResult.Contains(e.Title));
-            Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
+            Assert.Equal(expectedResult.Count, tuple.Total);
+            Assert.All(tuple.Items, e => expectedResult.Contains(e.Title));
+            Assert.True(tuple.Items.All(e => !notExpectedResult.Contains(e.Title)));
 
         }
 
         [Fact]
-        public void GetAllEvent_FilterByStartDate_SuccessGetFilteredEvents()
+        public async Task GetAllEvent_FilterByStartDate_SuccessGetFilteredEvents()
         {
             var searchDate = DateTime.Parse("2026-04-03T11:24:14.444Z");
 
@@ -90,18 +87,16 @@ namespace EventService.Tests
 
             };
 
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(null, searchDate, null), 1, 10);
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, searchDate, null), 1, 10);
 
-            Assert.Equal(expectedResult.Count, totalCount);
-            Assert.All(result, e => expectedResult.Contains(e.Title));
-            Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
+            Assert.Equal(expectedResult.Count, tuple.Total);
+            Assert.All(tuple.Items, e => expectedResult.Contains(e.Title));
+            Assert.True(tuple.Items.All(e => !notExpectedResult.Contains(e.Title)));
 
         }
 
         [Fact]
-        public void GetAllEvent_FilterByEndDate_SuccessGetFilteredEvents()
+        public async Task GetAllEvent_FilterByEndDate_SuccessGetFilteredEvents()
         {
             var searchDate = DateTime.Parse("2026-04-03T11:24:14.444Z");
 
@@ -120,18 +115,16 @@ namespace EventService.Tests
 
             };
 
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(null, null, searchDate), 1, 10);
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, searchDate), 1, 10);
 
-            Assert.Equal(expectedResult.Count, totalCount);
-            Assert.All(result, e => expectedResult.Contains(e.Title));
-            Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
+            Assert.Equal(expectedResult.Count, tuple.Total);
+            Assert.All(tuple.Items, e => expectedResult.Contains(e.Title));
+            Assert.True(tuple.Items.All(e => !notExpectedResult.Contains(e.Title)));
 
         }
 
         [Fact]
-        public void GetAllEvent_FilterByStartAndEndDate_SuccessGetFilteredEvents()
+        public async Task GetAllEvent_FilterByStartAndEndDate_SuccessGetFilteredEvents()
         {
             var startDate = DateTime.Parse("2026-04-02T11:24:15.444Z");
             var endDate = DateTime.Parse("2026-04-05T11:24:13.444Z");
@@ -152,16 +145,14 @@ namespace EventService.Tests
 
             };
 
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(null, startDate, endDate), 1, 10);
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, startDate, endDate), 1, 10);
 
-            Assert.Equal(expectedResult.Count, totalCount);
-            Assert.All(result, e => expectedResult.Contains(e.Title));
-            Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
+            Assert.Equal(expectedResult.Count, tuple.Total);
+            Assert.All(tuple.Items, e => expectedResult.Contains(e.Title));
+            Assert.True(tuple.Items.All(e => !notExpectedResult.Contains(e.Title)));
         }
         [Fact]
-        public void GetAllEvent_FilterByTitleAndStartAndEndDate_SuccessGetFilteredEvents()
+        public async Task GetAllEvent_FilterByTitleAndStartAndEndDate_SuccessGetFilteredEvents()
         {
             var startDate = DateTime.Parse("2026-04-02T11:24:14.444Z");
             var endDate = DateTime.Parse("2026-04-06T11:24:14.444Z");
@@ -181,34 +172,30 @@ namespace EventService.Tests
 
             };
 
-            int totalCount;
-            var result = eventService.GetAllEvent(out totalCount,
-                new EventManagerService.Domain.Filters.EventsFilters(title, startDate, endDate), 1, 10);
+            var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(title, startDate, endDate), 1, 10);
 
-            Assert.Equal(expectedResult.Count, totalCount);
-            Assert.All(result, e => expectedResult.Contains(e.Title));
-            Assert.True(result.All(e => !notExpectedResult.Contains(e.Title)));
+            Assert.Equal(expectedResult.Count, tuple.Total);
+            Assert.All(tuple.Items, e => expectedResult.Contains(e.Title));
+            Assert.True(tuple.Items.All(e => !notExpectedResult.Contains(e.Title)));
         }
 
         [Theory]
         [InlineData(100,10,1, 10)]
         [InlineData(8, 10, 1, 8)]
-        public void GetAllEvent_PaginationData_SuccessGetFilteredEvents(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
+        public async Task GetAllEvent_PaginationData_SuccessGetFilteredEvents(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
         {
-            var service = new EventManagerService.Domain.Services.EventService.EventService();
+            var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
+            var service = new EventManagerService.Domain.Services.EventService.EventService(context);
             for (int i = 0; i < elementCounts; i++) 
             {
-                service.AddEvent("TestEvent", DateTime.MinValue, DateTime.MaxValue, 1);
+                service.AddEventAsync("TestEvent", DateTime.MinValue, DateTime.MaxValue, 1).GetAwaiter().GetResult();
             }
-            
-            
-            int totalCount;
-            var result = service.GetAllEvent(out totalCount, new EventManagerService.Domain.Filters.EventsFilters(null, null, null), pageNumber, pageSize);
 
+            var tuple = await service.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, null), pageNumber, pageSize);
 
-
-            Assert.Equal(elementCounts, totalCount);
-            Assert.Equal(expectedPageSize, result.Count);
+            Assert.Equal(elementCounts, tuple.Total);
+            Assert.Equal(expectedPageSize, tuple.Items.Count);
         }
 
 
