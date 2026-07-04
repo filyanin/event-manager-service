@@ -1,9 +1,16 @@
 ﻿using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.Booking;
+using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
 
 namespace EventManagerService.Infrastructure
 {
@@ -11,7 +18,6 @@ namespace EventManagerService.Infrastructure
     {
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<BookingBackgroundService> _logger;
-        private readonly SemaphoreSlim _processingSemaphore = new(1, 1);
 
         public BookingBackgroundService(
             IServiceScopeFactory serviceScopeFactory,
@@ -27,13 +33,21 @@ namespace EventManagerService.Infrastructure
             {
                 try
                 {
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-                    var pendingBookings = await bookingService.GetBookingByStateAsync(Domain.Enum.BookingStatus.Pending);
-
-                    if (pendingBookings.Count > 0)
+                    // Получаем только идентификаторы ожидaющих бронирований в отдельном scope
+                    List<Guid> pendingBookingIds;
+                    using (var scope = _serviceScopeFactory.CreateScope())
                     {
-                        var tasks = pendingBookings.Select(booking => ProcessBookingAsync(booking, stoppingToken));
+                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        pendingBookingIds = await db.Bookings
+                            .Where(b => b.Status == Domain.Enum.BookingStatus.Pending)
+                            .Select(b => b.Id)
+                            .ToListAsync(stoppingToken);
+                    }
+
+                    if (pendingBookingIds.Count > 0)
+                    {
+                        // Для каждой брони создаём собственный scope внутри ProcessBookingAsync
+                        var tasks = pendingBookingIds.Select(id => ProcessBookingAsync(id, stoppingToken));
                         await Task.WhenAll(tasks);
                     }
 
@@ -52,70 +66,75 @@ namespace EventManagerService.Infrastructure
             }
         }
 
-        private async Task ProcessBookingAsync(Booking booking, CancellationToken stoppingToken)
+        private async Task ProcessBookingAsync(Guid bookingId, CancellationToken stoppingToken)
         {
+            Booking? booking = null;
             try
             {
                 // Имитация внешнего вызова - выполняется параллельно
                 await Task.Delay(10000, stoppingToken);
 
-                // Захватываем семафор перед изменением состояния
-                await _processingSemaphore.WaitAsync(stoppingToken);
+                // Каждый ProcessBookingAsync использует собственный scope и DbContext
+                using var scope = _serviceScopeFactory.CreateScope();
+                var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
+
+                // Загружаем бронь заново в пределах scope
                 try
                 {
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-
-                    // Проверяем, существует ли событие
-                    EventManagerService.Domain.Models.Event.Event? @event = null;
-                    try
-                    {
-                        @event = await eventService.GetEventByIdAsync(booking.EventId);
-                    }
-                    catch (KeyNotFoundException)
-                    {
-                        @event = null;
-                    }
-
-                    if (@event == null)
-                    {
-                        // Событие было удалено - отклоняем бронь
-                        booking.SetBookingRejected(DateTime.UtcNow);
-                        await bookingService.RejectBookingAsync(booking.Id);
-                        _logger.LogWarning($"Event {booking.EventId} not found. Booking {booking.Id} rejected.");
-                        return;
-                    }
-
-                    // Событие существует - подтверждаем бронь
-                    booking.SetBookingConfirmed(DateTime.UtcNow);
-                    await bookingService.ConfirmBookingAsync(booking.Id);
-                    _logger.LogInformation($"Booking {booking.Id} confirmed successfully");
+                    booking = await bookingService.GetBookingByIdAsync(bookingId);
                 }
-                finally
+                catch (KeyNotFoundException)
                 {
-                    _processingSemaphore.Release();
+                    _logger.LogWarning($"Booking {bookingId} not found when processing");
+                    return;
                 }
+
+                // Проверяем, существует ли событие
+                EventManagerService.Domain.Models.Event.Event? @event = null;
+                try
+                {
+                    @event = await eventService.GetEventByIdAsync(booking.EventId);
+                }
+                catch (KeyNotFoundException)
+                {
+                    @event = null;
+                }
+
+                if (@event == null)
+                {
+                    // Событие было удалено - отклоняем бронь
+                    booking.SetBookingRejected(DateTime.UtcNow);
+                    await bookingService.RejectBookingAsync(booking.Id);
+                    _logger.LogWarning($"Event {booking.EventId} not found. Booking {booking.Id} rejected.");
+                    return;
+                }
+
+                // Событие существует - подтверждаем бронь
+                booking.SetBookingConfirmed(DateTime.UtcNow);
+                await bookingService.ConfirmBookingAsync(booking.Id);
+                _logger.LogInformation($"Booking {booking.Id} confirmed successfully");
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation($"Booking {booking.Id} processing cancelled");
+                _logger.LogInformation($"Booking {bookingId} processing cancelled");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error processing booking {booking.Id}. Rejecting and releasing seats");
+                _logger.LogError(ex, $"Error processing booking {bookingId}. Rejecting and releasing seats");
                 try
                 {
-                    // Пытаемся отклонить бронь и вернуть места
-                    await _processingSemaphore.WaitAsync(stoppingToken);
+                    // Пытаемся отклонить бронь и вернуть места — выполняем в собственном scope
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
+                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
                     try
                     {
-                        using var scope = _serviceScopeFactory.CreateScope();
-                        var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-                        var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
+                        // Попытаться загрузить бронь в этом scope, если она ещё не загружена
+                        var bookingToHandle = booking ?? await bookingService.GetBookingByIdAsync(bookingId);
                         try
                         {
-                            var @event = await eventService.GetEventByIdAsync(booking.EventId);
+                            var @event = await eventService.GetEventByIdAsync(bookingToHandle.EventId);
                             if (@event != null)
                             {
                                 // Возвращаем место в пул
@@ -125,17 +144,17 @@ namespace EventManagerService.Infrastructure
                         catch { }
 
                         // Отклоняем бронь
-                        booking.SetBookingRejected(DateTime.UtcNow);
-                        await bookingService.RejectBookingAsync(booking.Id);
+                        bookingToHandle.SetBookingRejected(DateTime.UtcNow);
+                        await bookingService.RejectBookingAsync(bookingToHandle.Id);
                     }
-                    finally
+                    catch (KeyNotFoundException)
                     {
-                        _processingSemaphore.Release();
+                        _logger.LogWarning($"Booking {bookingId} not found when attempting to release resources");
                     }
                 }
                 catch (Exception releaseEx)
                 {
-                    _logger.LogError(releaseEx, $"Failed to release resources for booking {booking.Id}");
+                    _logger.LogError(releaseEx, $"Failed to release resources for booking {bookingId}");
                 }
             }
         }
