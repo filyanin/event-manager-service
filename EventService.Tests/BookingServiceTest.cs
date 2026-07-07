@@ -5,8 +5,8 @@ using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Exceptions;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Interfaces.BookingService;
-using EventManagerService.Domain.Models.Booking;
-using EventManagerService.Domain.Models.Event;
+using EventManagerService.Domain.Models.DomainBooking;
+using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Domain.Services.BookingService;
 using EventManagerService.Domain.Services.EventService;
 using EventManagerService.Infrastructure.DataAssets;
@@ -26,20 +26,20 @@ namespace EventService.Tests
         public BookingServiceTest()
         {
             var dbName = Guid.NewGuid().ToString();
-            var services = new ServiceCollection();
-            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(dbName));
-            services.AddDomain();
-            var provider = services.BuildServiceProvider();
+            var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(dbName).Options;
+            _context = new AppDbContext(options);
 
-            // keep context for some direct DB manipulations in tests
-            _context = provider.GetRequiredService<AppDbContext>();
-            _eventService = provider.GetRequiredService<IEventService>();
-            _bookingService = provider.GetRequiredService<IBookingService>();
+            // Создаём репозитории поверх InMemory DbContext и передаём их в сервисы
+            var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(_context);
+            var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(_context);
+
+            _eventService = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
+            _bookingService = new EventManagerService.Domain.Services.BookingService.BookingService(bookingRepo, eventRepo);
         }
 
         private EventManagerService.Infrastructure.DataAssets.Models.Event CreateTestEvent(Guid eventId, int totalSeats = 100)
         {
-            var domainEvent = new Event(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
+            var domainEvent = new DomainEvent(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
             var model = domainEvent.ConvertTo();
             _context.Events.Add(model);
             _context.SaveChanges();
@@ -199,7 +199,7 @@ namespace EventService.Tests
             int totalSeats = 5;
             var @event = CreateTestEvent(evId, totalSeats);
 
-            var bookings = new List<Booking>();
+            var bookings = new List<DomainBooking>();
             for (int i = 0; i < totalSeats; i++)
             {
                 var booking = await _bookingService.CreateBookingAsync(evId);
@@ -387,7 +387,7 @@ namespace EventService.Tests
 
             CreateTestEvent(evId, requestCount);
 
-            var tasks = new List<Task<Booking>>();
+            var tasks = new List<Task<DomainBooking>>();
 
             for (int i = 0; i < requestCount; i++)
             {

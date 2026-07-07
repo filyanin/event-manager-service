@@ -2,9 +2,9 @@
 using EventManagerService.Properties;
 using System.Resources;
 
-namespace EventManagerService.Domain.Models.Booking
+namespace EventManagerService.Domain.Models.DomainBooking
 {
-    public class Booking
+    public class DomainBooking
     {
         public Guid Id { get; private set; }
 
@@ -17,7 +17,7 @@ namespace EventManagerService.Domain.Models.Booking
         public DateTime? ProcessedAt { get; private set; }
 
         // Конструктор не приватный, т.к. в нём нет логики
-        public Booking(Guid eventId)
+        public DomainBooking(Guid eventId)
         {
             Id = Guid.NewGuid();
             EventId = eventId;
@@ -26,9 +26,9 @@ namespace EventManagerService.Domain.Models.Booking
             ProcessedAt = null;
         }
 
-        public EventManagerService.Domain.Models.Event.Event? Event { get; private set; }
+        public EventManagerService.Domain.Models.DomainEvent.DomainEvent? Event { get; private set; }
 
-        public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt, EventManagerService.Domain.Models.Event.Event? @event = null)
+        public DomainBooking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt, EventManagerService.Domain.Models.DomainEvent.DomainEvent? @event = null)
         {
             Id = id;
             EventId = eventId;

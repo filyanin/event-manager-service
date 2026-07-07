@@ -1,6 +1,6 @@
 ﻿using EventManagerService.Application.Interfaces.BookingService;
 using EventManagerService.Domain.Interfaces.BookingService;
-using EventManagerService.Domain.Models.Booking;
+using EventManagerService.Domain.Models.DomainBooking;
 using EventManagerService.Presentation.DTOs.BookingService;
 using Microsoft.AspNetCore.Mvc;
 

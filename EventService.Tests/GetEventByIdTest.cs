@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain;
 using Microsoft.Extensions.DependencyInjection;
-using EventManagerService.Domain.Models.Event;
+using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
