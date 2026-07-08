@@ -39,7 +39,7 @@ namespace EventService.Tests
 
         private EventManagerService.Infrastructure.DataAssets.Models.Event CreateTestEvent(Guid eventId, int totalSeats = 100)
         {
-            var domainEvent = new DomainEvent(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
+            var domainEvent = DomainEvent.Create(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
             var model = domainEvent.ConvertTo();
             _context.Events.Add(model);
             _context.SaveChanges();

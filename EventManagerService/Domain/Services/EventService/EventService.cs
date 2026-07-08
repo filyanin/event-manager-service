@@ -55,7 +55,7 @@ namespace EventManagerService.Domain.Services.EventService
 
         public async Task UpdateEventAsync(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
         {
-            var ev = DomainEvent.Create(title, startAt, endAt, 0, description);
+            var ev = DomainEvent.Create(id, title, startAt, endAt, 0, 0, description);
             await _eventRepository.UpdateAsync(ev);
         }
 

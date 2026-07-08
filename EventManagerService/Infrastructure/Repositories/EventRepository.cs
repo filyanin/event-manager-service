@@ -82,27 +82,39 @@ namespace EventManagerService.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        // Репозиторий не содержит сложной бизнес-логики резервирования мест
-        // Эти методы оставлены как простые операции изменения числа доступных мест
         public async Task<bool> TryReserveSeatsAsync(Guid id, int count = 1)
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-            if (model == null) throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, id));
-            if (model.AvailableSeats - count < 0) return false;
-            model.AvailableSeats -= count;
-            _context.Events.Update(model);
-            await _context.SaveChangesAsync();
+            // Попытка атомарно уменьшить AvailableSeats на сервере, чтобы избежать гонок при высокой конкуренции.
+            // Используем ExecuteUpdateAsync — выполнится одним SQL UPDATE и вернёт количество изменённых строк.
+            var affected = await _context.Events
+                .Where(e => e.Id == id && e.AvailableSeats >= count)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.AvailableSeats, e => e.AvailableSeats - count));
+
+            if (affected == 0)
+            {
+                // Проверим, существует ли событие — если нет, бросим KeyNotFoundException
+                var exists = await _context.Events.AnyAsync(e => e.Id == id);
+                if (!exists) throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, id));
+                return false;
+            }
+
             return true;
         }
 
         public async Task<bool> ReleaseSeatsAsync(Guid id, int count = 1)
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-            if (model == null) throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, id));
-            if (model.AvailableSeats + count > model.TotalSeats) return false;
-            model.AvailableSeats += count;
-            _context.Events.Update(model);
-            await _context.SaveChangesAsync();
+            // Попытка атомарно увеличить AvailableSeats, но не превысить TotalSeats
+            var affected = await _context.Events
+                .Where(e => e.Id == id && e.AvailableSeats + count <= e.TotalSeats)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.AvailableSeats, e => e.AvailableSeats + count));
+
+            if (affected == 0)
+            {
+                var exists = await _context.Events.AnyAsync(e => e.Id == id);
+                if (!exists) throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, id));
+                return false;
+            }
+
             return true;
         }
     }

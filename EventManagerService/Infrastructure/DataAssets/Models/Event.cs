@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using EventManagerService.Domain.Models.DomainEvent;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EventManagerService.Infrastructure.DataAssets.Models
@@ -23,7 +24,7 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Domain.Models.DomainEvent.DomainEvent ConvertTo()
         {
-            var domainEvent = new Domain.Models.DomainEvent.DomainEvent(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
+            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
 
             if (Bookings != null && Bookings.Any())
             {

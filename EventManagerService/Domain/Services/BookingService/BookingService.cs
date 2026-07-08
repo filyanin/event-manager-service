@@ -15,7 +15,6 @@ namespace EventManagerService.Domain.Services.BookingService
     {
         private readonly IBookingRepository _bookingRepository;
         private readonly IEventRepository _eventRepository;
-        private static readonly SemaphoreSlim _bookingSemaphore = new SemaphoreSlim(1, 1);
 
         public BookingService(IBookingRepository bookingRepository, IEventRepository eventRepository)
         {
@@ -25,28 +24,37 @@ namespace EventManagerService.Domain.Services.BookingService
 
         public async Task<DomainBooking> CreateBookingAsync(Guid eventId)
         {
-            await _bookingSemaphore.WaitAsync();
+            // Проверяем существование события и выполняем атомарную попытку резерва мест в БД
+            if (!await _eventRepository.ExistsAsync(eventId))
+            {
+                throw new KeyNotFoundException(string.Format(
+                    ErrorMessages.ObjectNotFound, eventId));
+            }
+
+            var reserved = await _eventRepository.TryReserveSeatsAsync(eventId, 1);
+            if (!reserved)
+            {
+                throw new NoAvailableSeatsException();
+            }
+
             try
             {
-                // Проверяем существование события и резервируем место
-                if (!await _eventRepository.ExistsAsync(eventId))
-                {
-                    throw new KeyNotFoundException(string.Format(
-                        ErrorMessages.ObjectNotFound, eventId));
-                }
-
-                var reserved = await _eventRepository.TryReserveSeatsAsync(eventId, 1);
-                if (!reserved)
-                {
-                    throw new NoAvailableSeatsException();
-                }
-
                 // Создаём запись брони в репозитории
                 return await _bookingRepository.CreateAsync(eventId);
             }
-            finally
+            catch
             {
-                _bookingSemaphore.Release();
+                // Если создание брони провалилось после успешного резерва, пытаемся компенсировать — вернуть место
+                try
+                {
+                    await _eventRepository.ReleaseSeatsAsync(eventId, 1);
+                }
+                catch
+                {
+                    // Подавляем исключение при компенсирующей операции, но оригинальное исключение будет проброшено дальше
+                }
+
+                throw;
             }
         }
 
