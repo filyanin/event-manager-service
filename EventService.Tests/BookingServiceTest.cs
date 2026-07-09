@@ -1,20 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using EventManagerService.Domain.Enum;
+﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Exceptions;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Models.DomainBooking;
 using EventManagerService.Domain.Models.DomainEvent;
-using EventManagerService.Domain.Services.BookingService;
-using EventManagerService.Domain.Services.EventService;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using EventManagerService.Domain;
-using Xunit;
-using EventManagerService.Domain.Interfaces.Repositories;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventService.Tests
 {
@@ -31,7 +24,7 @@ namespace EventService.Tests
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(dbName));
 
-            // register repositories and domain services as in production
+            // регистрируем репозитории и сервисы домена как в продакшн
             services.AddScoped<IEventRepository, EventManagerService.Infrastructure.Repositories.EventRepository>();
             services.AddScoped<IBookingRepository, EventManagerService.Infrastructure.Repositories.BookingRepository>();
             services.AddScoped<IEventService, EventManagerService.Domain.Services.EventService.EventService>();
@@ -61,7 +54,7 @@ namespace EventService.Tests
             _context.SaveChanges();
         }
 
-        // Helper to resolve services per-scope for parallel tests
+        // Вспомогательный метод для разрешения сервисов в отдельном scope для параллельных тестов
         private TService ResolveScoped<TService>() where TService : notnull
         {
             using var scope = _serviceProvider.CreateScope();
@@ -154,7 +147,7 @@ namespace EventService.Tests
             var first = await _bookingService.CreateBookingAsync(evId);
             Assert.NotNull(first);
 
-            // Simulate event deletion between calls
+            // Симулируем удаление события между вызовами
             var model = _context.Events.First(e => e.Id == evId);
             _context.Events.Remove(model);
             _context.SaveChanges();
@@ -255,13 +248,13 @@ namespace EventService.Tests
             int totalSeats = 10;
             var @event = CreateTestEvent(evId, totalSeats);
 
-            // Reserve 3 seats
+            // Резервируем 3 места
             await _bookingService.CreateBookingAsync(evId);
             await _bookingService.CreateBookingAsync(evId);
             await _bookingService.CreateBookingAsync(evId);
             Assert.Equal(totalSeats - 3, @event.AvailableSeats);
 
-            // Release 2 seats via DB helper
+            // Освобождаем 2 места через вспомогательную функцию работы с БД
             ReleaseSeatsInDb(evId, 2);
             var modelAfterRelease = _context.Events.First(e => e.Id == evId);
             Assert.Equal(totalSeats - 1, modelAfterRelease.AvailableSeats);
@@ -274,22 +267,22 @@ namespace EventService.Tests
             int totalSeats = 2;
             var @event = CreateTestEvent(evId, totalSeats);
 
-            // Create 2 bookings - exhausts seats
+
             var b1 = await _bookingService.CreateBookingAsync(evId);
             var b2 = await _bookingService.CreateBookingAsync(evId);
             Assert.Equal(0, @event.AvailableSeats);
 
-            // Try to create 3rd - should fail
+
             await Assert.ThrowsAsync<NoAvailableSeatsException>(
                 () => _bookingService.CreateBookingAsync(evId));
 
-            // Reject one booking and release seats in DB
+
             await _bookingService.RejectBookingAsync(b1.Id);
             ReleaseSeatsInDb(evId, 1);
             var modelAfterRelease = _context.Events.First(e => e.Id == evId);
             Assert.Equal(1, modelAfterRelease.AvailableSeats);
 
-            // Now we should be able to create a new booking
+
             var b3 = await _bookingService.CreateBookingAsync(evId);
             Assert.NotNull(b3);
             Assert.Equal(0, @event.AvailableSeats);
@@ -339,12 +332,12 @@ namespace EventService.Tests
 
             var booking = await _bookingService.CreateBookingAsync(evId);
 
-            // After reservation, check DB model
+            // После резерва проверяем модель в БД
             var modelAfterBooking = _context.Events.First(e => e.Id == evId);
             Assert.Equal(0, modelAfterBooking.AvailableSeats);
 
             await _bookingService.RejectBookingAsync(booking.Id);
-            // release seats in DB helper
+            // освобождаем места через вспомогательную функцию для БД
             ReleaseSeatsInDb(evId, 1);
             var modelAfterRelease = _context.Events.First(e => e.Id == evId);
             Assert.Equal(1, modelAfterRelease.AvailableSeats);
@@ -395,7 +388,7 @@ namespace EventService.Tests
             Assert.Equal(totalSeats, successCount);
             Assert.Equal(requestCount - totalSeats, failureCount);
 
-            // Reload event from the DB to get the up-to-date AvailableSeats value
+
             var modelAfter = _context.Events.First(e => e.Id == evId);
             Assert.Equal(0, modelAfter.AvailableSeats);
         }
@@ -422,17 +415,15 @@ namespace EventService.Tests
 
             var bookings = await Task.WhenAll(tasks);
 
-            // Verify all bookings were created
+
             Assert.Equal(requestCount, bookings.Length);
 
-            // Verify all IDs are unique
+
             var uniqueIds = new HashSet<Guid>(bookings.Select(b => b.Id));
             Assert.Equal(requestCount, uniqueIds.Count);
 
-            // Verify all are pending
             Assert.All(bookings, b => Assert.Equal(BookingStatus.Pending, b.Status));
 
-            // Verify all belong to the correct event
             Assert.All(bookings, b => Assert.Equal(evId, b.EventId));
         }
 
@@ -446,7 +437,7 @@ namespace EventService.Tests
 
             var tasks = new List<Task<(bool Success, int ReservedSeats)>>();
 
-            // 3 concurrent requests trying to reserve 5 seats each
+
             for (int i = 0; i < 3; i++)
             {
                 tasks.Add(Task.Run(async () =>
@@ -456,7 +447,7 @@ namespace EventService.Tests
                     try
                     {
                         var booking = await bookingService.CreateBookingAsync(evId);
-                        // In a real scenario, each booking could reserve multiple seats
+
                         return (true, 1);
                     }
                     catch (NoAvailableSeatsException)
@@ -510,7 +501,7 @@ namespace EventService.Tests
             Assert.Equal(totalSeats, successCount);
             Assert.Equal(requestCount - totalSeats, failureCount);
 
-            // Verify all successful bookings have unique IDs
+
             var successfulIds = results.Where(r => r.Success).Select(r => r.BookingId).ToHashSet();
             Assert.Equal(totalSeats, successfulIds.Count);
         }

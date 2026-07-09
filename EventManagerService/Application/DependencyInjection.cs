@@ -2,7 +2,6 @@
 using EventManagerService.Application.Interfaces.EventService;
 using EventManagerService.Application.Services;
 using EventManagerService.Application.Services.EventService;
-using System.Runtime.CompilerServices;
 
 namespace EventManagerService.Application
 {

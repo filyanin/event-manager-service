@@ -3,11 +3,7 @@ using EventManagerService.Domain.Exceptions;
 using EventManagerService.Domain.Interfaces.BookingService;
 using EventManagerService.Domain.Models.DomainBooking;
 using EventManagerService.Properties;
-using System.Resources;
-using EventManagerService.Infrastructure.DataAssets;
-using Microsoft.EntityFrameworkCore;
-using System.Threading;
-using EventManagerService.Domain.Interfaces.Repositories;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Domain.Services.BookingService
 {

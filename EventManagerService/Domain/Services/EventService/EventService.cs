@@ -1,15 +1,7 @@
 ﻿using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Properties;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Threading.Tasks;
-using DomainEvent = EventManagerService.Domain.Models.DomainEvent.DomainEvent;
-using DataEvent = EventManagerService.Infrastructure.DataAssets.Models.Event;
-using EventManagerService.Domain.Interfaces.Repositories;
+using EventManagerService.Domain.Models.DomainEvent;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Domain.Services.EventService
 {

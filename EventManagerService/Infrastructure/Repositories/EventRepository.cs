@@ -1,10 +1,9 @@
 using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Interfaces.Repositories;
 using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using EventManagerService.Properties;
-using System.Linq;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Infrastructure.Repositories
 {

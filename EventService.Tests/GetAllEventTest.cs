@@ -1,13 +1,6 @@
 ﻿using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using EventManagerService.Domain;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 
 namespace EventService.Tests
 {

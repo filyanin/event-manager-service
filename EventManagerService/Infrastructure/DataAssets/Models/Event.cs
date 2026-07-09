@@ -1,6 +1,4 @@
 ﻿using EventManagerService.Domain.Models.DomainEvent;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace EventManagerService.Infrastructure.DataAssets.Models
 {

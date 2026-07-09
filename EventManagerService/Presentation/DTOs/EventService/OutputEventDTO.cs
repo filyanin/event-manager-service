@@ -1,5 +1,4 @@
 ﻿using EventManagerService.Domain.Models.DomainEvent;
-using System.ComponentModel.DataAnnotations;
 
 namespace EventManagerService.Presentation.DTOs.EventService
 {

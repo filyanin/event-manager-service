@@ -1,16 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces.BookingService;
-using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Domain.Models.DomainBooking;
-using EventManagerService.Infrastructure.DataAssets;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using System.Threading;
-using System.Linq;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System;
+﻿using EventManagerService.Domain.Models.DomainBooking;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Infrastructure
 {
@@ -37,7 +26,7 @@ namespace EventManagerService.Infrastructure
                     List<Guid> pendingBookingIds;
                     using (var scope = _serviceScopeFactory.CreateScope())
                     {
-                        var bookingRepo = scope.ServiceProvider.GetRequiredService<EventManagerService.Domain.Interfaces.Repositories.IBookingRepository>();
+                        var bookingRepo = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
                         pendingBookingIds = await bookingRepo.GetPendingIdsAsync(stoppingToken);
                     }
 
@@ -73,8 +62,8 @@ namespace EventManagerService.Infrastructure
 
                 // Каждый ProcessBookingAsync использует собственный scope и репозитории
                 using var scope = _serviceScopeFactory.CreateScope();
-                var eventRepo = scope.ServiceProvider.GetRequiredService<EventManagerService.Domain.Interfaces.Repositories.IEventRepository>();
-                var bookingRepo = scope.ServiceProvider.GetRequiredService<EventManagerService.Domain.Interfaces.Repositories.IBookingRepository>();
+                var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+                var bookingRepo = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
 
                 // Загружаем бронь заново в пределах scope
                 try
@@ -123,8 +112,8 @@ namespace EventManagerService.Infrastructure
                 {
                     // Пытаемся отклонить бронь и вернуть места — выполняем в собственном scope
                     using var scope = _serviceScopeFactory.CreateScope();
-                        var eventRepo = scope.ServiceProvider.GetRequiredService<EventManagerService.Domain.Interfaces.Repositories.IEventRepository>();
-                        var bookingRepo = scope.ServiceProvider.GetRequiredService<EventManagerService.Domain.Interfaces.Repositories.IBookingRepository>();
+                        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+                        var bookingRepo = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
                         try
                         {
                             // Попытаться загрузить бронь в этом scope, если она ещё не загружена

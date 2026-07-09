@@ -1,9 +1,9 @@
 using EventManagerService.Domain.Enum;
-using EventManagerService.Domain.Interfaces.Repositories;
 using EventManagerService.Domain.Models.DomainBooking;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using EventManagerService.Properties;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Infrastructure.Repositories
 {

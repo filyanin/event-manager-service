@@ -1,13 +1,11 @@
-﻿using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Domain.Models.DomainEvent;
+﻿
+
+using EventManagerService.Domain;
+using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Infrastructure;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using EventManagerService.Domain;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 
 namespace EventService.Tests
 {
@@ -22,6 +20,7 @@ namespace EventService.Tests
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
             services.AddDomain();
+            services.AddInfrastructure();
             _serviceProvider = services.BuildServiceProvider();
 
             using var scope = _serviceProvider.CreateScope();

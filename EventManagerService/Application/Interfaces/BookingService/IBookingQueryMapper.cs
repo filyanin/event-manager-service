@@ -1,5 +1,4 @@
-﻿using EventManagerService.Domain.Models.DomainBooking;
-using EventManagerService.Presentation.DTOs.BookingService;
+﻿using EventManagerService.Presentation.DTOs.BookingService;
 
 namespace EventManagerService.Application.Interfaces.BookingService
 {

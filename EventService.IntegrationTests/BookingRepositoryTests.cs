@@ -1,14 +1,9 @@
 using EventManagerService.Domain.Enum;
-using EventManagerService.Domain.Models.DomainBooking;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Testcontainers.PostgreSql;
 using Npgsql;
 using Xunit;
-using EventManagerService.Infrastructure.Repositories;
 
 namespace EventService.IntegrationTests
 {

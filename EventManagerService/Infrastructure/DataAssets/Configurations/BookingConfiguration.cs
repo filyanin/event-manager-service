@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using EventManagerService.Domain.Enum;
 
 namespace EventManagerService.Infrastructure.DataAssets.Configurations
 {
