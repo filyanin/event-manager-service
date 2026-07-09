@@ -4,6 +4,7 @@ using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
 using EventManagerService.Presentation;
 using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.
