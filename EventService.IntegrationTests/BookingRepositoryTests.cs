@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 using Npgsql;
 using Xunit;
+using EventManagerService.Domain.Models;
 
 namespace EventService.IntegrationTests
 {
@@ -59,7 +60,7 @@ namespace EventService.IntegrationTests
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
 
-            var ev = EventManagerService.Domain.Models.DomainEvent.DomainEvent.Create("BookingEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var ev = DomainEvent.Create("BookingEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
             var added = await eventRepo.AddAsync(ev);
 
             var booking = await bookingRepo.CreateAsync(added.Id);
@@ -87,7 +88,7 @@ namespace EventService.IntegrationTests
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
 
-            var ev = EventManagerService.Domain.Models.DomainEvent.DomainEvent.Create("BookingEvent2", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var ev = DomainEvent.Create("BookingEvent2", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
             var added = await eventRepo.AddAsync(ev);
 
             var booking = await bookingRepo.CreateAsync(added.Id);

@@ -15,6 +15,10 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventManagerService.Application\EventManagerService.Application.csproj" />
+    <ProjectReference Include="..\EventManagerService.Infrastructure\EventManagerService.Infrastructure.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\ErrorMessages.Designer.cs">

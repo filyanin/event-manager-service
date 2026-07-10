@@ -1,5 +1,6 @@
 ﻿
 using EventManagerService.Domain;
+using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Infrastructure;
 using EventManagerService.Infrastructure.DataAssets;

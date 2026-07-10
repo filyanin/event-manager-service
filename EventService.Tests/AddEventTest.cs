@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using EventManagerService.Infrastructure;
 using EventManagerService.Domain;
 using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Domain.Interfaces;
 
 
 namespace EventService.Tests

@@ -6,6 +6,7 @@ using Testcontainers.PostgreSql;
 using EventManagerService.Infrastructure.Repositories;
 using Npgsql;
 using Xunit;
+using EventManagerService.Domain.Models;
 
 namespace EventService.IntegrationTests
 {
