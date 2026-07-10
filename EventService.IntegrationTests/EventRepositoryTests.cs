@@ -21,6 +21,46 @@ namespace EventService.IntegrationTests
             await _postgres.StartAsync();
         }
 
+        [Fact]
+        public async Task Update_Works()
+        {
+            await ResetDatabaseAsync();
+            using var context = CreateContext();
+            var repo = CreateRepository(context);
+
+            var ev = DomainEvent.Create("ToUpdate", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var added = await repo.AddAsync(ev);
+
+            var newStart = added.StartAt.AddHours(1);
+            var newEnd = added.EndAt.AddHours(1);
+            added.UpdateEvent("Updated title", newStart, newEnd, "Updated description");
+
+            await repo.UpdateAsync(added);
+
+            var fetched = await repo.GetByIdAsync(added.Id);
+            Assert.Equal("Updated title", fetched.Title);
+            Assert.Equal("Updated description", fetched.Description);
+            Assert.Equal(newStart, fetched.StartAt);
+            Assert.Equal(newEnd, fetched.EndAt);
+        }
+
+        [Fact]
+        public async Task Exists_Works()
+        {
+            await ResetDatabaseAsync();
+            using var context = CreateContext();
+            var repo = CreateRepository(context);
+
+            var ev = DomainEvent.Create("ExistsEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var added = await repo.AddAsync(ev);
+
+            var exists = await repo.ExistsAsync(added.Id);
+            Assert.True(exists);
+
+            var notExists = await repo.ExistsAsync(Guid.NewGuid());
+            Assert.False(notExists);
+        }
+
         public async Task DisposeAsync()
         {
             await _postgres.DisposeAsync();
@@ -33,14 +73,14 @@ namespace EventService.IntegrationTests
                 .Options;
 
             var context = new AppDbContext(options);
-            // ensure database exists
-            context.Database.EnsureCreated();
+
+            context.Database.Migrate();
             return context;
         }
 
         private async Task ResetDatabaseAsync()
         {
-            // clear pooled connections so database can be dropped
+            
             NpgsqlConnection.ClearAllPools();
             await using var ctx = CreateContext();
             ctx.Database.EnsureCreated();
@@ -51,7 +91,7 @@ namespace EventService.IntegrationTests
             }
             catch
             {
-                // ignore if tables don't exist yet
+                
             }
         }
 
@@ -80,34 +120,34 @@ namespace EventService.IntegrationTests
             using var context = CreateContext();
             var repo = CreateRepository(context);
 
-            // seed 25 events with varying titles and dates
+            
             for (int i = 0; i < 25; i++)
             {
-                // ensure title meets domain minimum length (>=6)
+                
                 var title = i % 2 == 0 ? $"EvenEvent-{i}" : $"OddEvent-{i}";
                 var start = DateTime.UtcNow.Date.AddDays(i);
                 var end = start.AddHours(1);
                 await repo.AddAsync(DomainEvent.Create(title, start, end, 10));
             }
 
-            // no filters, page 1 size 10
+            
             var result = await repo.GetAllAsync(new EventsFilters(null, null, null), 1, 10);
             Assert.Equal(25, result.Total);
             Assert.Equal(10, result.Items.Count);
 
-            // filter by title substring
+            
             var result2 = await repo.GetAllAsync(new EventsFilters("Odd", null, null), 1, 100);
             Assert.Equal(12, result2.Total);
             Assert.All(result2.Items, i => Assert.Contains("Odd", i.Title));
 
-            // filter by date range
+            
             var from = DateTime.UtcNow.Date.AddDays(5);
             var to = DateTime.UtcNow.Date.AddDays(15);
             var result3 = await repo.GetAllAsync(new EventsFilters(null, from, to), 1, 100);
             Assert.True(result3.Total >= 1);
             Assert.All(result3.Items, i => Assert.True(i.StartAt >= from && i.EndAt <= to));
 
-            // pagination boundary
+            
             var result4 = await repo.GetAllAsync(new EventsFilters(null, null, null), 3, 10);
             Assert.Equal(25, result4.Total);
             Assert.Equal(5, result4.Items.Count);

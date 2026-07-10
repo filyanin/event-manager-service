@@ -186,15 +186,7 @@ GET /bookings/f47ac10b-58cc-4372-a567-0e02b2c3d479
 
 В проекте предусмотрены интеграционные тесты, которые проверяют поведение приложения с реальной СУБД (PostgreSQL). Для запуска интеграционных тестов требуется Docker — тесты запускают контейнер PostgreSQL или подключаются к указанной в окружении/конфигурации инстанции базы данных.
 
-Пример запуска PostgreSQL через Docker для тестов:
-
-```powershell
-# Запустить контейнер PostgreSQL
-docker run --name event-manager-test-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=event_manager -p 5432:5432 -d postgres:15
-
-# Остановить и удалить контейнер после завершения тестов
-docker stop event-manager-test-db; docker rm event-manager-test-db
-```
+Для запуска интеграционных тестов требуется запущенный Docker. Testcontainers используется внутри тестов и сам поднимает необходимые контейнеры PostgreSQL при выполнении тестов, поэтому ручной запуск контейнера через docker run не обязателен.
 
 Настройте переменные окружения или appsettings для тестового подключения, например:
 

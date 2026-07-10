@@ -30,8 +30,8 @@ namespace EventService.IntegrationTests
                 .Options;
 
             var context = new AppDbContext(options);
-            // ensure database exists
-            context.Database.EnsureCreated();
+
+            context.Database.Migrate();
             return context;
         }
 
