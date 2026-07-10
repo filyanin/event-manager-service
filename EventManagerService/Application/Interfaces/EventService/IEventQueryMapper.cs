@@ -1,9 +1,5 @@
 ﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Models;
 using EventManagerService.Presentation.DTOs.EventService;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EventManagerService.Application.Interfaces.EventService
 {

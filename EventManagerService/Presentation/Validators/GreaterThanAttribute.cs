@@ -1,5 +1,4 @@
 ﻿using EventManagerService.Properties;
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.Resources;
 

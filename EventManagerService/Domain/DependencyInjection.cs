@@ -13,8 +13,6 @@ namespace EventManagerService.Domain
 
             services.AddScoped<IBookingService, BookingService>();
 
-            // AppDbContext is registered in Infrastructure as scoped; domain services depend on it and must be scoped as well.
-
             return services;
         }
 

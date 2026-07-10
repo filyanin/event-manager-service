@@ -1,11 +1,7 @@
 ﻿using EventManagerService.Application.Interfaces.EventService;
 using EventManagerService.Presentation.DTOs.EventService;
-using EventManagerService.Presentation.Validators;
-using EventManagerService.Properties;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using System.Resources;
 
 namespace EventManagerService.Presentation.Controllers
 {

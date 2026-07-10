@@ -18,10 +18,10 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Booking() { }
 
-        public Domain.Models.Booking.Booking ConvertTo()
+        public Domain.Models.DomainBooking.DomainBooking ConvertTo()
         {
             // Не конвертируем связанный Event здесь, чтобы избежать рекурсии при преобразовании
-            return new Domain.Models.Booking.Booking(Id, EventId, Status, CreatedAt, ProcessedAt, null);
+            return new Domain.Models.DomainBooking.DomainBooking(Id, EventId, Status, CreatedAt, ProcessedAt, null);
         }
 
     }

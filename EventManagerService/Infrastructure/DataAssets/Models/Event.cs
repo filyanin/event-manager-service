@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using EventManagerService.Domain.Models.DomainEvent;
 
 namespace EventManagerService.Infrastructure.DataAssets.Models
 {
@@ -21,9 +20,9 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Event() { }
 
-        public Domain.Models.Event.Event ConvertTo()
+        public Domain.Models.DomainEvent.DomainEvent ConvertTo()
         {
-            var domainEvent = new Domain.Models.Event.Event(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
+            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
 
             if (Bookings != null && Bookings.Any())
             {
@@ -32,7 +31,7 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
                 for (int i = 0; i < domainBookings.Length; i++)
                 {
                     var booking = domainBookings[i];
-                    var eventProp = typeof(EventManagerService.Domain.Models.Booking.Booking).GetProperty("Event");
+                    var eventProp = typeof(EventManagerService.Domain.Models.DomainBooking.DomainBooking).GetProperty("Event");
                     if (eventProp != null && eventProp.CanWrite)
                     {
                         eventProp.SetValue(booking, domainEvent);

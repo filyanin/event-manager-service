@@ -1,5 +1,4 @@
-﻿using EventManagerService.Domain.Models.Event;
-using System.ComponentModel.DataAnnotations;
+﻿using EventManagerService.Domain.Models.DomainEvent;
 
 namespace EventManagerService.Presentation.DTOs.EventService
 {
@@ -24,7 +23,7 @@ namespace EventManagerService.Presentation.DTOs.EventService
             AvailableSeats = availableSeats;
         }
 
-        public OutputEventDTO(Event _event)
+        public OutputEventDTO(DomainEvent _event)
         {
             Id = _event.Id;
             Title = _event.Title;

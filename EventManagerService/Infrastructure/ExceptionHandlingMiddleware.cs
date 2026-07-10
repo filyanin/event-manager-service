@@ -3,7 +3,6 @@ using EventManagerService.Properties;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Resources;
 
 namespace EventManagerService.Infrastructure
 {
@@ -79,7 +78,7 @@ namespace EventManagerService.Infrastructure
 
         private static string GetProblemTypeUri(int statusCode)
         {
-            // Use standard about:blank type for common status codes
+            // Используем стандартный тип about:blank для распространённых кодов состояния
             return statusCode switch
             {
                 StatusCodes.Status400BadRequest => "about:blank#bad-request",

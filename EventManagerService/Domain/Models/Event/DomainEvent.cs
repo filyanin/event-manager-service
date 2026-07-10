@@ -1,9 +1,9 @@
 ﻿using EventManagerService.Properties;
 using System.Resources;
 
-namespace EventManagerService.Domain.Models.Event
+namespace EventManagerService.Domain.Models.DomainEvent
 {
-    public class Event
+    public class DomainEvent
     {
         private const int _minTitleLength = 6;
         private const int _maxTitleLength = 1000;
@@ -19,7 +19,7 @@ namespace EventManagerService.Domain.Models.Event
         public int TotalSeats { get; private set; }
         public int AvailableSeats { get; private set; }
 
-        private Event(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
+        private DomainEvent(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
         {
             Id = Guid.NewGuid();
             Title = title;
@@ -30,7 +30,7 @@ namespace EventManagerService.Domain.Models.Event
             AvailableSeats = TotalSeats;
         }
 
-        public Event(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
+        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
         {
             Id = id;
             Title = title;
@@ -40,7 +40,7 @@ namespace EventManagerService.Domain.Models.Event
             TotalSeats = totalSeats;
             AvailableSeats = availableSeats;
         }
-        public static Event Create(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
+        public static DomainEvent Create(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
             
@@ -53,7 +53,21 @@ namespace EventManagerService.Domain.Models.Event
             if (totalSeats <= 0)
                 throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("TotalSeatsValidationError"), nameof(totalSeats)));
                 
-            return new Event(title, startAt,endAt, totalSeats,description); ;
+            return new DomainEvent(title, startAt,endAt, totalSeats,description); ;
+
+        }
+
+        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(title);
+
+            if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("StringLengthError"), nameof(title), _minTitleLength, _maxTitleLength));
+
+            if (startAt >= endAt)
+                throw new ArgumentException(string.Format(new ResourceManager(typeof(ErrorMessages)).GetString("GreaterThanValidationError"), nameof(endAt), nameof(startAt)));
+           
+            return new DomainEvent(id, title, startAt, endAt, totalSeats, availableSeats, description); ;
 
 
         }

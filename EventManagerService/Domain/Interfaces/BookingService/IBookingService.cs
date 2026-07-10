@@ -1,16 +1,16 @@
 ﻿using EventManagerService.Domain.Enum;
-using EventManagerService.Domain.Models.Booking;
+using EventManagerService.Domain.Models.DomainBooking;
 
 namespace EventManagerService.Domain.Interfaces.BookingService
 {
     public interface IBookingService
     {
 
-        public Task<Booking> CreateBookingAsync(Guid eventId);
+        public Task<DomainBooking> CreateBookingAsync(Guid eventId);
 
-        public Task<Booking> GetBookingByIdAsync(Guid bookingId);
+        public Task<DomainBooking> GetBookingByIdAsync(Guid bookingId);
 
-        public Task<List<Booking>> GetBookingByStateAsync(BookingStatus state);
+        public Task<List<DomainBooking>> GetBookingByStateAsync(BookingStatus state);
 
         public Task ConfirmBookingAsync(Guid bookingId);
 

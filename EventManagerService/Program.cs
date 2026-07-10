@@ -4,24 +4,31 @@ using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
 using EventManagerService.Presentation;
 using EventManagerService.Infrastructure.DataAssets;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddInfrastructure(builder.Configuration);
+// Регистрация DbContext с провайдером PostgreSQL
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Добавляем сервисы в контейнер.
+builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 builder.Services.AddDomain();
 builder.Services.AddPresentation();
+
+
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
-// Configure the HTTP request pipeline.
+// Настраиваем конвейер обработки HTTP-запросов.
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseSwagger();

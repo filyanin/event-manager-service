@@ -1,19 +1,20 @@
 ﻿using EventManagerService.Infrastructure.DataAssets;
+using EventManagerService.Infrastructure.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace EventManagerService.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
             services.AddHostedService<BookingBackgroundService>();
 
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            // Репозитории зарегистрированы здесь, в Infrastructure, чтобы централизовать работу с хранилищем
+            services.AddScoped<IEventRepository, Repositories.EventRepository>();
+            services.AddScoped<IBookingRepository, Repositories.BookingRepository>();
+
+
 
             return services;
         }
