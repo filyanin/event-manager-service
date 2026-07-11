@@ -1,5 +1,4 @@
-﻿using EventManagerService.Infrastructure.DataAssets;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
+﻿using EventManagerService.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventManagerService.Infrastructure

@@ -4,7 +4,7 @@ using EventManagerService.Infrastructure.Interfaces.Repositories;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
 
-namespace EventManagerService.Domain.Services
+namespace EventManagerService.Application.Services
 {
     public class BookingService : IBookingService
     {

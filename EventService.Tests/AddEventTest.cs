@@ -5,6 +5,7 @@ using EventManagerService.Infrastructure;
 using EventManagerService.Domain;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Interfaces;
+using EventManagerService.Application.Interfaces;
 
 
 namespace EventService.Tests

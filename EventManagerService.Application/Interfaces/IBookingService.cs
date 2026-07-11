@@ -1,7 +1,7 @@
 ﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Models;
 
-namespace EventManagerService.Domain.Interfaces
+namespace EventManagerService.Application.Interfaces
 {
     public interface IBookingService
     {

@@ -1,4 +1,5 @@
 ﻿
+using EventManagerService.Application.Interfaces;
 using EventManagerService.Domain;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Interfaces.EventService;

@@ -1,8 +1,7 @@
+using EventManagerService.Application.Interfaces;
 using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Models;
 using EventManagerService.Infrastructure.DataAssets;
-using EventManagerService.Infrastructure.DataAssets.Models;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventManagerService.Infrastructure.Repositories
@@ -21,8 +20,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(booking.EventId);
-                ex.Data["FirstParamValue"] = booking.EventId;
+                ex.Data["firstParamName"] = nameof(booking.EventId);
+                ex.Data["firstParamValue"] = booking.EventId;
 
                 throw ex;
             }
@@ -50,8 +49,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(bookingId);
-                ex.Data["FirstParamValue"] = bookingId;
+                ex.Data["firstParamName"] = nameof(bookingId);
+                ex.Data["firstParamValue"] = bookingId;
 
                 throw ex;
             }
@@ -81,8 +80,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(booking.Id);
-                ex.Data["FirstParamValue"] = booking.Id;
+                ex.Data["firstParamName"] = nameof(booking.Id);
+                ex.Data["firstParamValue"] = booking.Id;
 
                 throw ex;
             }

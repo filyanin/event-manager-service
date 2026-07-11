@@ -39,27 +39,34 @@ namespace EventManagerService.Domain.Models
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
             {
-                var ex = new DomainValidationException("LengthValidationError");
-                ex.Data["firstParamName"] = nameof(title);
-                ex.Data["firstParamValue"] = _minTitleLength;
+                var ex = new StringLengthValidationException("LengthValidationError",
+                    nameof(_minTitleLength),
+                    nameof(_maxTitleLength),
+                    _minTitleLength,
+                    _maxTitleLength);
 
                 throw ex;
             }
 
             if (startAt >= endAt)
             {
-                var ex = new DomainValidationException("GreaterThanValidationError");
-                ex.Data["firstParamName"] = nameof(startAt);
-                ex.Data["firstParamValue"] = startAt;
+                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                    nameof(endAt),
+                    nameof(startAt),
+                    endAt,
+                    startAt);
+
 
                 throw ex;
             }
 
             if (totalSeats < 0)
             {
-                var ex = new DomainValidationException("TotalSeatsValidationError");
-                ex.Data["firstParamName"] = nameof(totalSeats);
-                ex.Data["firstParamValue"] = totalSeats;
+                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                    nameof(totalSeats),
+                    "zero",
+                    totalSeats,
+                    0);
 
                 throw ex;
             }
@@ -74,18 +81,22 @@ namespace EventManagerService.Domain.Models
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
             {
-                var ex = new DomainValidationException("LengthValidationError");
-                ex.Data["firstParamName"] = nameof(title);
-                ex.Data["firstParamValue"] = _minTitleLength;
+                var ex = new StringLengthValidationException("LengthValidationError",
+                    nameof(_minTitleLength),
+                    nameof(_maxTitleLength),
+                    _minTitleLength,
+                    _maxTitleLength);
 
                 throw ex;
             }
 
             if (startAt >= endAt)
             {
-                var ex = new DomainValidationException("GreaterThanValidationError");
-                ex.Data["firstParamName"] = nameof(startAt);
-                ex.Data["firstParamValue"] = startAt;
+                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                    nameof(endAt),
+                    nameof(startAt),
+                    endAt,
+                    startAt);
 
                 throw ex;
             }
@@ -100,22 +111,18 @@ namespace EventManagerService.Domain.Models
         {
             if (seatsToReserve <= 0)
             {
-                var ex = new NoAvailableSeatsException("NoAviableSeatsError");
-                ex.Data["firstParamName"] = nameof(seatsToReserve);
-                ex.Data["firstParamValue"] = seatsToReserve;
-
-                throw ex;
+                // Структурированное исключение с параметрами
+                throw new NoAvailableSeatsException("NoAviableSeatsError", nameof(seatsToReserve), seatsToReserve);
             }
 
             if (AvailableSeats - seatsToReserve < 0)
             {
-                var ex = new NoAvailableSeatsException("NoEnoughAvailableSeatsError");
-                ex.Data["firstParamName"] = nameof(seatsToReserve);
-                ex.Data["firstParamValue"] = seatsToReserve;
-                ex.Data["secondParamName"] = nameof(AvailableSeats);
-                ex.Data["secondParamValue"] = AvailableSeats;
-
-                throw ex;
+                throw new NoAvailableSeatsException(
+                    "NoEnoughAvailableSeatsError",
+                    nameof(seatsToReserve),
+                    seatsToReserve,
+                    nameof(AvailableSeats),
+                    AvailableSeats);
             }
             else
             {
@@ -128,24 +135,22 @@ namespace EventManagerService.Domain.Models
         {
             if (seatsToRelease <= 0)
             {
-                var ex = new DomainValidationException("WrongReleaseSeatsCountError");
-                ex.Data["firstParamName"] = nameof(seatsToRelease);
-                ex.Data["firstParamValue"] = seatsToRelease;
-                ex.Data["secondParamName"] = "0";
-                ex.Data["secondParamValue"] = "0";
-
-                throw ex;
+                throw new GreaterThenValidationException(
+                    "WrongReleaseSeatsCountError",
+                    nameof(seatsToRelease),
+                    "0",
+                    seatsToRelease,
+                    0);
             }
 
             if (AvailableSeats + seatsToRelease > TotalSeats)
             {
-                var ex = new DomainValidationException("WrongReleaseSeatsCountError");
-                ex.Data["firstParamName"] = nameof(seatsToRelease);
-                ex.Data["firstParamValue"] = seatsToRelease;
-                ex.Data["secondParamName"] = nameof(TotalSeats);
-                ex.Data["secondParamValue"] = TotalSeats;
-
-                throw ex;
+                throw new GreaterThenValidationException(
+                    "WrongReleaseSeatsCountError",
+                    nameof(seatsToRelease),
+                    nameof(TotalSeats),
+                    seatsToRelease,
+                    TotalSeats);
             }
 
             AvailableSeats += seatsToRelease;

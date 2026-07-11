@@ -1,11 +1,11 @@
 using EventManagerService.Domain.Filters;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
 using EventManagerService.Domain.Models;
 using EventManagerService.Infrastructure.DataAssets.Models;
 using EventManagerService.Domain.ValueObjects;
-using EventManagerService.Domain.Exceptions;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Application.Exceptions;
 
 namespace EventManagerService.Infrastructure.Repositories
 {
@@ -41,8 +41,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(id);
-                ex.Data["FirstParamValue"] = id;
+                ex.Data["firstParamName"] = nameof(id);
+                ex.Data["firstParamValue"] = id;
                 throw ex;
             }
 
@@ -83,8 +83,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(id);
-                ex.Data["FirstParamValue"] = id;
+                ex.Data["firstParamName"] = nameof(id);
+                ex.Data["firstParamValue"] = id;
                 throw ex;
             }
 
@@ -97,8 +97,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(domainEvent.Id);
-                ex.Data["FirstParamValue"] = domainEvent.Id;
+                ex.Data["firstParamName"] = nameof(domainEvent.Id);
+                ex.Data["firstParamValue"] = domainEvent.Id;
                 throw ex;
             }
 
@@ -118,8 +118,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(@event.Id);
-                ex.Data["FirstParamValue"] = @event.Id;
+                ex.Data["firstParamName"] = nameof(@event.Id);
+                ex.Data["firstParamValue"] = @event.Id;
                 throw ex;
             }
 
@@ -134,8 +134,8 @@ namespace EventManagerService.Infrastructure.Repositories
             catch (DbUpdateConcurrencyException)
             {
                 var ex = new SeatsReserveConcurencyException("SeatsReserveConcurencyException");
-                ex.Data["FirstParamName"] = nameof(@event.Id);
-                ex.Data["FirstParamValue"] = @event.Id;
+                ex.Data["firstParamName"] = nameof(@event.Id);
+                ex.Data["firstParamValue"] = @event.Id;
                 throw ex;
             }
 
@@ -149,8 +149,8 @@ namespace EventManagerService.Infrastructure.Repositories
             if (model == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["FirstParamName"] = nameof(@event.Id);
-                ex.Data["FirstParamValue"] = @event.Id;
+                ex.Data["firstParamName"] = nameof(@event.Id);
+                ex.Data["firstParamValue"] = @event.Id;
                 throw ex;
             }
 

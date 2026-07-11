@@ -28,12 +28,12 @@ namespace EventManagerService.Domain.Models
         {
             if (processedAt != null && createdAt >= processedAt)
             {
-                var ex = new Exceptions.DomainValidationException("GreaterThanValidationError");
-                ex.Data["firstParamName"] = nameof(processedAt);
-                ex.Data["firstParamValue"] = processedAt;
-                ex.Data["secondParamName"] = nameof(createdAt);
-                ex.Data["secondParamValue"] = createdAt;
-
+                var ex = new Exceptions.GreaterThenValidationException(
+                    "GreaterThanValidationError",
+                    nameof(processedAt),
+                    nameof(createdAt),
+                    processedAt,
+                    createdAt);
                 throw ex;
             }
 
@@ -53,11 +53,12 @@ namespace EventManagerService.Domain.Models
 
             if (CreatedAt >= processedAt)
             {
-                var ex = new Exceptions.DomainValidationException("GreaterThanValidationError");
-                ex.Data["firstParamName"] = nameof(processedAt);
-                ex.Data["firstParamValue"] = processedAt;
-                ex.Data["secondParamName"] = nameof(CreatedAt);
-                ex.Data["secondParamValue"] = CreatedAt;
+                var ex = new Exceptions.GreaterThenValidationException(
+                    "GreaterThanValidationError",
+                    nameof(processedAt),
+                    nameof(CreatedAt),
+                    processedAt,
+                    CreatedAt);
                 throw ex;
             }
 
@@ -71,11 +72,12 @@ namespace EventManagerService.Domain.Models
 
             if (CreatedAt >= rejectedAt)
             {
-                var ex = new Exceptions.DomainValidationException("GreaterThanValidationError");
-                ex.Data["firstParamName"] = nameof(rejectedAt);
-                ex.Data["firstParamValue"] = rejectedAt;
-                ex.Data["secondParamName"] = nameof(CreatedAt);
-                ex.Data["secondParamValue"] = CreatedAt;
+                var ex = new Exceptions.GreaterThenValidationException(
+                    "GreaterThanValidationError",
+                    nameof(rejectedAt),
+                    nameof(CreatedAt),
+                    rejectedAt,
+                    CreatedAt);
                 throw ex;
             }
 

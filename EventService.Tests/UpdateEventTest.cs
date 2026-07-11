@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Infrastructure.DataAssets;
@@ -21,7 +22,7 @@ namespace EventService.Tests
             var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
             _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(_context);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
+            eventService = new EventManagerService.Application.Services.EventService.EventService(eventRepo);
             eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
         }
 

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
-namespace EventManagerService.Infrastructure
+namespace EventManagerService.Application
 {
     public class ExceptionHandlingMiddleware
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EventManagerService.Domain.Exceptions
+namespace EventManagerService.Application.Exceptions
 {
     public class SeatsReserveConcurencyException : Exception
     {

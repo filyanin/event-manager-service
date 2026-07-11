@@ -10,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using EventManagerService.Infrastructure.Interfaces.Repositories;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Application.Services;
 
 namespace EventService.Tests
 {
@@ -29,8 +31,8 @@ namespace EventService.Tests
             // регистрируем репозитории и сервисы домена как в продакшн
             services.AddScoped<IEventRepository, EventManagerService.Infrastructure.Repositories.EventRepository>();
             services.AddScoped<IBookingRepository, EventManagerService.Infrastructure.Repositories.BookingRepository>();
-            services.AddScoped<IEventService, EventManagerService.Domain.Services.EventService>();
-            services.AddScoped<IBookingService, EventManagerService.Domain.Services.BookingService>();
+            services.AddScoped<IEventService, EventManagerService.Application.Services.EventService>();
+            services.AddScoped<IBookingService, BookingService>();
 
             _serviceProvider = services.BuildServiceProvider();
             _context = _serviceProvider.GetRequiredService<AppDbContext>();

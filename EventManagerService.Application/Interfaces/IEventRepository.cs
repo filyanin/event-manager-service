@@ -2,7 +2,7 @@ using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Models;
 using EventManagerService.Domain.ValueObjects;
 
-namespace EventManagerService.Infrastructure.Interfaces.Repositories
+namespace EventManagerService.Application.Interfaces
 {
     public interface IEventRepository
     {

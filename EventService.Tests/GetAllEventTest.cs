@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace EventService.Tests
             _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
             // Используем репозиторий поверх InMemory DbContext и передаём его в сервис
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(_context);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
+            eventService = new EventManagerService.Application.Services.EventService.EventService(eventRepo);
             eventService.AddEventAsync("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1).GetAwaiter().GetResult();
             eventService.AddEventAsync("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1).GetAwaiter().GetResult();
             eventService.AddEventAsync("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1).GetAwaiter().GetResult();
@@ -183,7 +184,7 @@ namespace EventService.Tests
             var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
             var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
-            var service = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
+            var service = new EventManagerService.Application.Services.EventService.EventService(eventRepo);
             for (int i = 0; i < elementCounts; i++) 
             {
                 service.AddEventAsync("TestEvent", DateTime.MinValue, DateTime.MaxValue, 1).GetAwaiter().GetResult();

@@ -2,7 +2,7 @@
 using EventManagerService.Domain.Models;
 using EventManagerService.Domain.ValueObjects;
 
-namespace EventManagerService.Domain.Interfaces
+namespace EventManagerService.Application.Interfaces
 {
     public interface IEventService
     {

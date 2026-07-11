@@ -4,7 +4,7 @@ using EventManagerService.Domain.Models;
 using EventManagerService.Domain.ValueObjects;
 using EventManagerService.Infrastructure.Interfaces.Repositories;
 
-namespace EventManagerService.Domain.Services
+namespace EventManagerService.Application.Services
 {
     public class EventService : IEventService
     {

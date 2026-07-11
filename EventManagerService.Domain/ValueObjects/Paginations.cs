@@ -17,20 +17,26 @@ namespace EventManagerService.Domain.ValueObjects
         {
             if (pageSize < minPageSize || pageSize > maxPageSize)
             {
-                var ex = new DomainValidationException("InvalidPageSize");
-                ex.Data["FirstParamName"] = nameof(pageSize);
-                ex.Data["FirstParamValue"] = pageSize;
-                ex.Data["SecondParamName"] = nameof(minPageSize);
-                ex.Data["SecondParamValue"] = minPageSize;
-                ex.Data["ThirdParamName"] = nameof(maxPageSize);
-                ex.Data["ThirdParamValue"] = maxPageSize;
+                // Используем специальное исключение для диапазонов (min/max)
+                var ex = new RangeValidationException(
+                    "InvalidPageSize",
+                    nameof(pageSize),
+                    nameof(minPageSize),
+                    nameof(maxPageSize),
+                    pageSize,
+                    minPageSize,
+                    maxPageSize);
+
                 throw ex;
             }
             if (pageNumber < 1)
             {
-                var ex = new DomainValidationException("InvalidPageNumber");
-                ex.Data["FirstParamName"] = nameof(pageNumber);
-                ex.Data["FirstParamValue"] = pageNumber;
+                var ex = new GreaterThenValidationException("InvalidPageNumber",
+                    nameof(pageNumber),
+                    "1",
+                    pageNumber,
+                    1);
+
                 throw ex;
             }
             this.pageSize = pageSize;

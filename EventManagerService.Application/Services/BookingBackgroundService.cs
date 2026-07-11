@@ -1,11 +1,12 @@
-﻿using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
 using EventManagerService.Infrastructure.Interfaces.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace EventManagerService.Infrastructure
+namespace EventManagerService.Application.Services
 {
     public class BookingBackgroundService : BackgroundService
     {

@@ -14,11 +14,12 @@ namespace EventManagerService.Domain.Filters
 
             if (From != null && to != null && from > to)
             {
-                var ex = new DomainValidationException("GreaterThanValidationError");
-                ex.Data["FirstParamName"] = nameof(from);
-                ex.Data["FirstParamValue"] = from;
-                ex.Data["SecondParamName"] = nameof(to);
-                ex.Data["SecondParamValue"] = to;
+                var ex = new GreaterThenValidationException(
+                    "GreaterThanValidationError",
+                    nameof(to),
+                    nameof(from),
+                    to,
+                    from);
 
                 throw ex;
             }
