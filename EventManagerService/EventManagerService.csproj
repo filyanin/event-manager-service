@@ -12,12 +12,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventManagerService.Application\EventManagerService.Application.csproj" />
     <ProjectReference Include="..\EventManagerService.Infrastructure\EventManagerService.Infrastructure.csproj" />
+    <ProjectReference Include="..\EventManagerService.Shared\EventManagerService.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -162,7 +162,7 @@ namespace EventManagerService.Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException) { 
-                throw new HightLoadException("HightLoadException");
+                throw new HightLoadException(EventManagerService.Shared.ErrorCodes.ErrorCodes.HighLoad);
             }
 
             return true;

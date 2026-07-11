@@ -1,7 +1,8 @@
-﻿using EventManagerService.Domain.Enum;
+﻿using EventManagerService.Application.DTOs;
+using EventManagerService.Application.Exceptions;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Exceptions;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
-using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
 
 namespace EventManagerService.Application.Services
@@ -17,7 +18,7 @@ namespace EventManagerService.Application.Services
             _eventRepository = eventRepository ?? throw new ArgumentNullException(nameof(eventRepository));
         }
 
-        public async Task<DomainBooking> CreateBookingAsync(Guid eventId, int seatsToReserve = 1)
+        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, int seatsToReserve = 1)
         {
 
             if (!await _eventRepository.ExistsAsync(eventId))
@@ -41,7 +42,9 @@ namespace EventManagerService.Application.Services
                 //Вторая попытка зарезервировать места, если первая не удалась из-за конкуренции
                 Random rnd = new Random();
                 await Task.Delay(rnd.Next(50, 201)); //небольшая случайная задержка перед повторной попыткой, чтобы разнести нагрузку равномернее
+
                 eventEntity = await _eventRepository.GetByIdAsync(eventId);
+
                 eventEntity.TryReserveSeats(seatsToReserve);
 
                 try
@@ -50,14 +53,14 @@ namespace EventManagerService.Application.Services
                 }
                 catch (SeatsReserveConcurencyException ex2)
                 {
-                    throw new HightLoadException("HightLoad");
+                    var exeption = new HightLoadException("SeatsReserveConcurencyException", ex2);
+                    throw exeption;
                 }
-
             }
 
             if (!reserved)
             {
-                var ex = new NoAvailableSeatsException("NoAvailableSeatsError");
+                var ex = new NoAvailableSeatsException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NoAvailableSeatsError);
                 ex.Data["firstParamName"] = nameof(eventId);
                 ex.Data["firstParamValue"] = eventId;
                 throw ex;
@@ -71,12 +74,18 @@ namespace EventManagerService.Application.Services
                 null);
 
             try
-            {                
-                return await _bookingRepository.CreateAsync(booking);
+            {
+                var result = await _bookingRepository.CreateAsync(booking);
+
+                return new BookingDTO()
+                { 
+                    EventId = result.EventId,
+                    Id = result.Id,
+                    Status = result.Status
+                };
             }
             catch
             {
-
                 eventEntity.ReleaseSeats(seatsToReserve);
                 await _eventRepository.ReleaseSeatsAsync(eventEntity);
 
@@ -84,14 +93,27 @@ namespace EventManagerService.Application.Services
             }
         }
 
-        public async Task<DomainBooking> GetBookingByIdAsync(Guid bookingId)
+        public async Task<BookingDTO> GetBookingByIdAsync(Guid bookingId)
         {
-            return await _bookingRepository.GetByIdAsync(bookingId);
+            var result = await _bookingRepository.GetByIdAsync(bookingId);
+
+            return new BookingDTO()
+            {
+                EventId = result.EventId,
+                Id = result.Id,
+                Status = result.Status
+            };
         }
 
-        public async Task<List<DomainBooking>> GetBookingByStateAsync(BookingStatus state)
+        public async Task<List<BookingDTO>> GetBookingByStateAsync(BookingStatus state)
         {
-            return await _bookingRepository.GetByStateAsync(state);
+            var results = await _bookingRepository.GetByStateAsync(state);
+            return results.Select(r => new BookingDTO()
+            {
+                EventId = r.EventId,
+                Id = r.Id,
+                Status = r.Status
+            }).ToList();
         }
 
         public async Task ConfirmBookingAsync(Guid bookingId)
@@ -121,8 +143,6 @@ namespace EventManagerService.Application.Services
                 ex.Data["firstParamValue"] = bookingId;
                 throw ex;
             }
-
-
 
             booking.SetBookingRejected(DateTime.UtcNow);
 

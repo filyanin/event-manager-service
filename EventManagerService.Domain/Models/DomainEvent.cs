@@ -39,7 +39,7 @@ namespace EventManagerService.Domain.Models
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
             {
-                var ex = new StringLengthValidationException("LengthValidationError",
+                var ex = new StringLengthValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.LengthValidationError,
                     nameof(_minTitleLength),
                     nameof(_maxTitleLength),
                     _minTitleLength,
@@ -50,7 +50,7 @@ namespace EventManagerService.Domain.Models
 
             if (startAt >= endAt)
             {
-                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                var ex = new GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(endAt),
                     nameof(startAt),
                     endAt,
@@ -62,7 +62,7 @@ namespace EventManagerService.Domain.Models
 
             if (totalSeats < 0)
             {
-                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                var ex = new GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(totalSeats),
                     "zero",
                     totalSeats,
@@ -81,7 +81,7 @@ namespace EventManagerService.Domain.Models
 
             if (title.Length < _minTitleLength || title.Length > _maxTitleLength)
             {
-                var ex = new StringLengthValidationException("LengthValidationError",
+                var ex = new StringLengthValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.LengthValidationError,
                     nameof(_minTitleLength),
                     nameof(_maxTitleLength),
                     _minTitleLength,
@@ -92,7 +92,7 @@ namespace EventManagerService.Domain.Models
 
             if (startAt >= endAt)
             {
-                var ex = new GreaterThenValidationException("GreaterThanValidationError",
+                var ex = new GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(endAt),
                     nameof(startAt),
                     endAt,
@@ -112,13 +112,13 @@ namespace EventManagerService.Domain.Models
             if (seatsToReserve <= 0)
             {
                 // Структурированное исключение с параметрами
-                throw new NoAvailableSeatsException("NoAviableSeatsError", nameof(seatsToReserve), seatsToReserve);
+                throw new NoAvailableSeatsException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NoAviableSeatsError, nameof(seatsToReserve), seatsToReserve);
             }
 
             if (AvailableSeats - seatsToReserve < 0)
             {
                 throw new NoAvailableSeatsException(
-                    "NoEnoughAvailableSeatsError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.NoEnoughAvailableSeatsError,
                     nameof(seatsToReserve),
                     seatsToReserve,
                     nameof(AvailableSeats),
@@ -136,7 +136,7 @@ namespace EventManagerService.Domain.Models
             if (seatsToRelease <= 0)
             {
                 throw new GreaterThenValidationException(
-                    "WrongReleaseSeatsCountError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.WrongReleaseSeatsCountError,
                     nameof(seatsToRelease),
                     "0",
                     seatsToRelease,
@@ -146,7 +146,7 @@ namespace EventManagerService.Domain.Models
             if (AvailableSeats + seatsToRelease > TotalSeats)
             {
                 throw new GreaterThenValidationException(
-                    "WrongReleaseSeatsCountError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.WrongReleaseSeatsCountError,
                     nameof(seatsToRelease),
                     nameof(TotalSeats),
                     seatsToRelease,

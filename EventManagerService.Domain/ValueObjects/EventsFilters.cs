@@ -15,7 +15,7 @@ namespace EventManagerService.Domain.Filters
             if (From != null && to != null && from > to)
             {
                 var ex = new GreaterThenValidationException(
-                    "GreaterThanValidationError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(to),
                     nameof(from),
                     to,

@@ -1,8 +1,8 @@
-﻿using EventManagerService.Domain.Filters;
-using EventManagerService.Domain.Interfaces;
+﻿using EventManagerService.Application.DTOs;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Models;
 using EventManagerService.Domain.ValueObjects;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Application.Services
 {
@@ -15,16 +15,20 @@ namespace EventManagerService.Application.Services
             _eventRepository = eventRepository;
         }
 
-        public async Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllEventAsync(EventsFilters filters, Paginations paginations)
+        public async Task<(IReadOnlyList<OutputEventDTO> Items, int Total)> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
         {
-            return await _eventRepository.GetAllAsync(filters, paginations);
+            var result = await _eventRepository.GetAllAsync(filters,new Paginations(pageSize, page));
+
+            var items = result.Items.Select(e => new OutputEventDTO(e)).ToList();
+
+            return (items, result.Total);
         }
 
-        public async Task<DomainEvent> AddEventAsync(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
+        public async Task<OutputEventDTO> AddEventAsync(InputEventDTO eventDto)
         {
-            var ev = DomainEvent.Create(Guid.NewGuid(), title, startAt, endAt, totalSeats,totalSeats, description);
+            var ev = DomainEvent.Create(Guid.NewGuid(), eventDto.Title, (DateTime)eventDto.StartAt, (DateTime)eventDto.EndAt, (int)eventDto.TotalSeat, (int)eventDto.TotalSeat, eventDto.Description);
 
-            return await _eventRepository.AddAsync(ev);
+            return  new OutputEventDTO(await _eventRepository.AddAsync(ev));
         }
 
         public async Task DeleteEventAsync(Guid id)
@@ -32,14 +36,14 @@ namespace EventManagerService.Application.Services
             await _eventRepository.DeleteAsync(id);
         }
 
-        public async Task<DomainEvent> GetEventByIdAsync(Guid id)
+        public async Task<OutputEventDTO> GetEventByIdAsync(Guid id)
         {
-            return await _eventRepository.GetByIdAsync(id);
+            return new OutputEventDTO(await _eventRepository.GetByIdAsync(id));
         }
 
-        public async Task UpdateEventAsync(Guid id, string title, DateTime startAt, DateTime endAt, string? description = null)
+        public async Task UpdateEventAsync(Guid id, InputEventDTO eventDto)
         {
-            var ev = DomainEvent.Create(id, title, startAt, endAt, 0, 0, description);
+            var ev = DomainEvent.Create(id, eventDto.Title, (DateTime)eventDto.StartAt, (DateTime)eventDto.EndAt, (int)eventDto.TotalSeat, (int)eventDto.TotalSeat, eventDto.Description);
             await _eventRepository.UpdateAsync(ev);
         }
 

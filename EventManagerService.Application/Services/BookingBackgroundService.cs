@@ -1,7 +1,5 @@
 ﻿using EventManagerService.Application.Interfaces;
-using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -112,44 +110,29 @@ namespace EventManagerService.Application.Services
             {
                 _logger.LogInformation("BookingProcessingCancelled");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "BookingProcessingErrorRejecting");
-                try
+                catch (Exception ex)
                 {
-                    // Пытаемся отклонить бронь и вернуть места — выполняем в собственном scope
-                    using var scope = _serviceScopeFactory.CreateScope();
-                        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
-                        var bookingRepo = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+                    _logger.LogError(ex, "BookingProcessingErrorRejecting");
+                    try
+                    {
+                        // Пытаемся отклонить бронь и вернуть места через бизнес-правила (BookingService) в собственном scope
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
+
                         try
                         {
-                            // Попытаться загрузить бронь в этом scope, если она ещё не загружена
-                            var bookingToHandle = booking ?? await bookingRepo.GetByIdAsync(bookingId);
-                            try
-                            {
-                                var @event = await eventRepo.GetByIdAsync(bookingToHandle.EventId);
-                                if (@event != null)
-                                {
-                                    // Возвращаем место в пул
-                                    await eventRepo.ReleaseSeatsAsync(@event.Id);
-                                }
-                            }
-                            catch { }
-
-                            // Отклоняем бронь
-                            bookingToHandle.SetBookingRejected(DateTime.UtcNow);
-                            await bookingRepo.RejectAsync(bookingToHandle.Id);
+                            await bookingService.RejectBookingAsync(bookingId);
                         }
                         catch (KeyNotFoundException)
                         {
-                            _logger.LogWarning(new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("BookingNotFoundWhenReleasing"), bookingId);
+                            _logger.LogWarning("BookingNotFoundWhenReleasing");
                         }
+                    }
+                    catch (Exception releaseEx)
+                    {
+                        _logger.LogError(releaseEx, "FailedToReleaseResources");
+                    }
                 }
-                catch (Exception releaseEx)
-                {
-                    _logger.LogError(releaseEx, new System.Resources.ResourceManager(typeof(EventManagerService.Properties.ErrorMessages)).GetString("FailedToReleaseResources"), bookingId);
-                }
-            }
         }
     }
 }

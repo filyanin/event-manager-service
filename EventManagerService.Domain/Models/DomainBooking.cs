@@ -29,7 +29,7 @@ namespace EventManagerService.Domain.Models
             if (processedAt != null && createdAt >= processedAt)
             {
                 var ex = new Exceptions.GreaterThenValidationException(
-                    "GreaterThanValidationError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(processedAt),
                     nameof(createdAt),
                     processedAt,
@@ -49,12 +49,12 @@ namespace EventManagerService.Domain.Models
         public void SetBookingConfirmed(DateTime processedAt)
         {
             if (!Status.Equals(BookingStatus.Pending))
-                throw new InvalidOperationException("TryChangeCompletedBookingError");
+                throw new Exceptions.GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.TryChangeCompletedBookingError);
 
             if (CreatedAt >= processedAt)
             {
                 var ex = new Exceptions.GreaterThenValidationException(
-                    "GreaterThanValidationError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(processedAt),
                     nameof(CreatedAt),
                     processedAt,
@@ -68,12 +68,12 @@ namespace EventManagerService.Domain.Models
         public void SetBookingRejected(DateTime rejectedAt)
         {
             if (!Status.Equals(BookingStatus.Pending))
-                throw new InvalidOperationException("TryChangeCompletedBookingError");
+                throw new Exceptions.GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.TryChangeCompletedBookingError);
 
             if (CreatedAt >= rejectedAt)
             {
                 var ex = new Exceptions.GreaterThenValidationException(
-                    "GreaterThanValidationError",
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
                     nameof(rejectedAt),
                     nameof(CreatedAt),
                     rejectedAt,
