@@ -31,7 +31,29 @@ namespace EventManagerService.Domain.Services
 
             eventEntity.TryReserveSeats(seatsToReserve);
 
-            var reserved = await _eventRepository.TryReserveSeatsAsync(eventEntity);
+            bool reserved = false;
+            try
+            {
+                reserved = await _eventRepository.TryReserveSeatsAsync(eventEntity);
+            }
+            catch (SeatsReserveConcurencyException ex)
+            {
+                //Вторая попытка зарезервировать места, если первая не удалась из-за конкуренции
+                Random rnd = new Random();
+                await Task.Delay(rnd.Next(50, 201)); //небольшая случайная задержка перед повторной попыткой, чтобы разнести нагрузку равномернее
+                eventEntity = await _eventRepository.GetByIdAsync(eventId);
+                eventEntity.TryReserveSeats(seatsToReserve);
+
+                try
+                {
+                    reserved = await _eventRepository.TryReserveSeatsAsync(eventEntity);
+                }
+                catch (SeatsReserveConcurencyException ex2)
+                {
+                    throw new HightLoadException("HightLoad");
+                }
+
+            }
 
             if (!reserved)
             {
@@ -75,6 +97,7 @@ namespace EventManagerService.Domain.Services
         public async Task ConfirmBookingAsync(Guid bookingId)
         {
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
             if (booking == null)
             {
                 var ex = new KeyNotFoundException("ObjectNotFound");
@@ -90,10 +113,34 @@ namespace EventManagerService.Domain.Services
         public async Task RejectBookingAsync(Guid bookingId)
         {
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            
+            if (booking == null)
+            {
+                var ex = new KeyNotFoundException("ObjectNotFound");
+                ex.Data["firstParamName"] = nameof(bookingId);
+                ex.Data["firstParamValue"] = bookingId;
+                throw ex;
+            }
+
+
 
             booking.SetBookingRejected(DateTime.UtcNow);
 
+            var @event = await _eventRepository.GetByIdAsync(booking.EventId);
+
+            if (@event == null)
+            {
+                var ex = new KeyNotFoundException("ObjectNotFound");
+                ex.Data["firstParamName"] = nameof(booking.EventId);
+                ex.Data["firstParamValue"] = booking.EventId;
+                throw ex;
+            }
+
+            @event.ReleaseSeats(1);
+
+
             await _bookingRepository.ChangeBookingStateAsync(booking);
+            await _eventRepository.ReleaseSeatsAsync(@event);
         }
     }
 }

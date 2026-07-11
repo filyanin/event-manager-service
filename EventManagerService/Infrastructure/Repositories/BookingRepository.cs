@@ -16,7 +16,12 @@ namespace EventManagerService.Infrastructure.Repositories
         public async Task<DomainBooking> CreateAsync(Guid eventId)
         {
             var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
-            if (model == null) throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, eventId));
+
+            if (model == null)
+            { 
+                var ex = new KeyNotFoundException("Object not found")
+                throw new KeyNotFoundException(string.Format(ErrorMessages.ObjectNotFound, eventId));
+            }
 
             var bookingModel = new Infrastructure.DataAssets.Models.Booking
             {

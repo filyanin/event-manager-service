@@ -26,6 +26,17 @@ namespace EventManagerService.Domain.Models
 
         public DomainBooking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
         {
+            if (processedAt != null && createdAt >= processedAt)
+            {
+                var ex = new Exceptions.DomainValidationException("GreaterThanValidationError");
+                ex.Data["firstParamName"] = nameof(processedAt);
+                ex.Data["firstParamValue"] = processedAt;
+                ex.Data["secondParamName"] = nameof(createdAt);
+                ex.Data["secondParamValue"] = createdAt;
+
+                throw ex;
+            }
+
             Id = id;
             EventId = eventId;
             Status = status;
@@ -71,5 +82,6 @@ namespace EventManagerService.Domain.Models
             Status = BookingStatus.Rejected;
             ProcessedAt = rejectedAt;
         }
+
     }
 }

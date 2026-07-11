@@ -19,7 +19,9 @@ namespace EventManagerService.Domain.Models
         public int TotalSeats { get; private set; }
         public int AvailableSeats { get; private set; }
 
-        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
+        public byte[]? Timestamp { get; private set; }
+
+        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null, byte[]? timestamp = null)
         {
             Id = id;
             Title = title;
@@ -28,9 +30,10 @@ namespace EventManagerService.Domain.Models
             EndAt = endAt;
             TotalSeats = totalSeats;
             AvailableSeats = availableSeats;
+            Timestamp = timestamp;
         }
 
-        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null)
+        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null, byte[]? timestamp = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
@@ -60,7 +63,7 @@ namespace EventManagerService.Domain.Models
 
                 throw ex;
             }
-            return new DomainEvent(id, title, startAt, endAt, totalSeats, availableSeats, description); ;
+            return new DomainEvent(id, title, startAt, endAt, totalSeats, availableSeats, description, timestamp);
 
 
         }

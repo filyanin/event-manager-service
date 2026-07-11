@@ -1,11 +1,12 @@
 using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Models;
+using EventManagerService.Domain.ValueObjects;
 
 namespace EventManagerService.Infrastructure.Interfaces.Repositories
 {
     public interface IEventRepository
     {
-        public Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, int page, int pageSize);
+        public Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations);
 
         public Task<DomainEvent> AddAsync(DomainEvent ev);
 

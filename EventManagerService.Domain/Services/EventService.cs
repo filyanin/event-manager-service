@@ -1,6 +1,7 @@
 ﻿using EventManagerService.Domain.Filters;
 using EventManagerService.Domain.Interfaces;
 using EventManagerService.Domain.Models;
+using EventManagerService.Domain.ValueObjects;
 using EventManagerService.Infrastructure.Interfaces.Repositories;
 
 namespace EventManagerService.Domain.Services
@@ -14,9 +15,9 @@ namespace EventManagerService.Domain.Services
             _eventRepository = eventRepository;
         }
 
-        public async Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
+        public async Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllEventAsync(EventsFilters filters, Paginations paginations)
         {
-            return await _eventRepository.GetAllAsync(filters, page, pageSize);
+            return await _eventRepository.GetAllAsync(filters, paginations);
         }
 
         public async Task<DomainEvent> AddEventAsync(string title, DateTime startAt, DateTime endAt, int totalSeats, string? description = null)
