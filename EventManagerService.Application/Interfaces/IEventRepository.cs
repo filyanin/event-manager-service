@@ -6,7 +6,7 @@ namespace EventManagerService.Application.Interfaces
 {
     public interface IEventRepository
     {
-        public Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations);
+        public Task<(IList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations);
 
         public Task<DomainEvent> AddAsync(DomainEvent ev);
 

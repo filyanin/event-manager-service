@@ -15,7 +15,7 @@ namespace EventManagerService.Application.Services
             _eventRepository = eventRepository;
         }
 
-        public async Task<(IReadOnlyList<OutputEventDTO> Items, int Total)> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
+        public async Task<(IList<OutputEventDTO> Items, int Total)> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
         {
             var result = await _eventRepository.GetAllAsync(filters,new Paginations(pageSize, page));
 

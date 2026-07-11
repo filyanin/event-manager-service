@@ -22,7 +22,19 @@ namespace EventManagerService.Controllers
         
         public async Task<ActionResult<PaginatedResult>> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
         {
-            return Ok(await _eventService.GetAllEventAsync(new Domain.Filters.EventsFilters(title,from,to), page, pageSize));
+            var list = await _eventService.GetAllEventAsync(new Domain.Filters.EventsFilters(title, from, to), page, pageSize);
+
+            var result = new PaginatedResult();
+
+            result.Events = list.Items.ToList();
+
+            result.Total = list.Total;
+
+            result.Page = page;
+
+            result.CurrentPageSize = pageSize;
+
+            return Ok(result);
         }
 
         [HttpGet]

@@ -17,6 +17,8 @@ builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 builder.Services.AddDomain();
 builder.Services.AddPresentation();
+// Регистрация сервисов локализации, чтобы IStringLocalizerFactory был доступен в DI
+builder.Services.AddLocalization();
 
 
 

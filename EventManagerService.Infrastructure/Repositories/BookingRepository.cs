@@ -19,7 +19,7 @@ namespace EventManagerService.Infrastructure.Repositories
 
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(booking.EventId);
                 ex.Data["firstParamValue"] = booking.EventId;
 
@@ -48,7 +48,7 @@ namespace EventManagerService.Infrastructure.Repositories
             
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(bookingId);
                 ex.Data["firstParamValue"] = bookingId;
 
@@ -79,7 +79,7 @@ namespace EventManagerService.Infrastructure.Repositories
 
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(booking.Id);
                 ex.Data["firstParamValue"] = booking.Id;
 

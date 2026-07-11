@@ -40,7 +40,7 @@ namespace EventManagerService.Infrastructure.Repositories
             var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(id);
                 ex.Data["firstParamValue"] = id;
                 throw ex;
@@ -52,7 +52,7 @@ namespace EventManagerService.Infrastructure.Repositories
 
         public async Task<bool> ExistsAsync(Guid id) => await _context.Events.AnyAsync(e => e.Id == id);
 
-        public async Task<(IReadOnlyList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations)
+        public async Task<(IList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations)
         {
 
             IQueryable<Event> dbQuery = _context.Events;
@@ -73,7 +73,7 @@ namespace EventManagerService.Infrastructure.Repositories
 
             var total = await dbQuery.CountAsync();
             var items = await dbQuery.Skip((paginations.pageNumber - 1) * paginations.pageSize).Take(paginations.pageSize).ToListAsync();
-            var domainItems = items.Select(i => i.ConvertToDomainEvent()).ToList().AsReadOnly();
+            var domainItems = items.Select(i => i.ConvertToDomainEvent()).ToList();
             return (domainItems, total);
         }
 
@@ -82,7 +82,7 @@ namespace EventManagerService.Infrastructure.Repositories
             var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(id);
                 ex.Data["firstParamValue"] = id;
                 throw ex;
@@ -96,7 +96,7 @@ namespace EventManagerService.Infrastructure.Repositories
             var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == domainEvent.Id);
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(domainEvent.Id);
                 ex.Data["firstParamValue"] = domainEvent.Id;
                 throw ex;
@@ -117,7 +117,7 @@ namespace EventManagerService.Infrastructure.Repositories
 
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(@event.Id);
                 ex.Data["firstParamValue"] = @event.Id;
                 throw ex;
@@ -148,7 +148,7 @@ namespace EventManagerService.Infrastructure.Repositories
             var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
             if (model == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(@event.Id);
                 ex.Data["firstParamValue"] = @event.Id;
                 throw ex;

@@ -4,6 +4,8 @@ using EventManagerService.Shared.ErrorCodes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Localization;
+using EventManagerService.Properties;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System;
@@ -16,11 +18,16 @@ namespace EventManagerService
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+        private readonly IStringLocalizer _localizer;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IStringLocalizerFactory localizerFactory)
         {
             _next = next;
             _logger = logger;
+            // Создаём локализатор для ресурсов ErrorMessages
+            var baseName = typeof(ErrorMessages).FullName!; // EventManagerService.Properties.ErrorMessages
+            var asmName = typeof(ErrorMessages).Assembly.GetName().Name!;
+            _localizer = localizerFactory.Create(baseName, asmName);
         }
 
         public async Task Invoke(HttpContext context)
@@ -53,12 +60,35 @@ namespace EventManagerService
 
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
 
+            // Формируем локализованное сообщение, если доступно
+            string detail = ex.Message;
+            try
+            {
+                if (ex is EventManagerService.Shared.Exceptions.AppException appEx)
+                {
+                    var localized = _localizer[appEx.ErrorCode];
+                    if (!localized.ResourceNotFound)
+                    {
+                        // Подставляем параметры из Exception.Data, если они есть
+                        var args = new List<object?>();
+                        if (ex.Data.Contains("firstParamValue")) args.Add(ex.Data["firstParamValue"]);
+                        if (ex.Data.Contains("secondParamValue")) args.Add(ex.Data["secondParamValue"]);
+                        detail = args.Count > 0 ? string.Format(localized.Value, args.ToArray()) : localized.Value;
+                    }
+                }
+            }
+            catch
+            {
+                // Игнорируем ошибки локализации и используем исходное сообщение
+                detail = ex.Message;
+            }
+
             var error = new ProblemDetails
             {
                 Type = GetProblemTypeUri(statusCode),
                 Title = GetTitleForException(ex, statusCode),
                 Status = statusCode,
-                Detail = ex.Message,
+                Detail = detail,
                 Instance = context.Request.Path
             };
 

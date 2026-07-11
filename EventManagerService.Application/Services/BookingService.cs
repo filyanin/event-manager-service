@@ -14,8 +14,8 @@ namespace EventManagerService.Application.Services
 
         public BookingService(IBookingRepository bookingRepository, IEventRepository eventRepository)
         {
-            _bookingRepository = bookingRepository ?? throw new ArgumentNullException(nameof(bookingRepository));
-            _eventRepository = eventRepository ?? throw new ArgumentNullException(nameof(eventRepository));
+            _bookingRepository = bookingRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(bookingRepository));
+            _eventRepository = eventRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(eventRepository));
         }
 
         public async Task<BookingDTO> CreateBookingAsync(Guid eventId, int seatsToReserve = 1)
@@ -23,7 +23,7 @@ namespace EventManagerService.Application.Services
 
             if (!await _eventRepository.ExistsAsync(eventId))
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(eventId);
                 ex.Data["firstParamValue"] = eventId;
                 throw ex;
@@ -122,7 +122,7 @@ namespace EventManagerService.Application.Services
 
             if (booking == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(bookingId);
                 ex.Data["firstParamValue"] = bookingId;
                 throw ex;
@@ -138,7 +138,7 @@ namespace EventManagerService.Application.Services
             
             if (booking == null)
             {
-                var ex = new KeyNotFoundException("ObjectNotFound");
+                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(bookingId);
                 ex.Data["firstParamValue"] = bookingId;
                 throw ex;
