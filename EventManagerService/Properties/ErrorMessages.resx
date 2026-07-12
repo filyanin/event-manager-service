@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="GreaterThanValidationError" xml:space="preserve">
-    <value>{0} must be greater than {1}</value>
+    <value>{firstParamName} ({firstParamValue}) must be greater than {secondParamName} ({SecondParamName})</value>
   </data>
   <data name="NoComparableError" xml:space="preserve">
     <value>This attribute can only be used on comparable types</value>

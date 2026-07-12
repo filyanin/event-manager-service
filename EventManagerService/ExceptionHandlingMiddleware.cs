@@ -24,7 +24,7 @@ namespace EventManagerService
         {
             _next = next;
             _logger = logger;
-            // —оздаЄм локализатор дл€ ресурсов ErrorMessages
+            // базовое им€ ресурса ErrorMessages
             var baseName = typeof(ErrorMessages).FullName!; // EventManagerService.Properties.ErrorMessages
             var asmName = typeof(ErrorMessages).Assembly.GetName().Name!;
             _localizer = localizerFactory.Create(baseName, asmName);
@@ -60,28 +60,8 @@ namespace EventManagerService
 
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
 
-            // ‘ормируем локализованное сообщение, если доступно
-            string detail = ex.Message;
-            try
-            {
-                if (ex is EventManagerService.Shared.Exceptions.AppException appEx)
-                {
-                    var localized = _localizer[appEx.ErrorCode];
-                    if (!localized.ResourceNotFound)
-                    {
-                        // ѕодставл€ем параметры из Exception.Data, если они есть
-                        var args = new List<object?>();
-                        if (ex.Data.Contains("firstParamValue")) args.Add(ex.Data["firstParamValue"]);
-                        if (ex.Data.Contains("secondParamValue")) args.Add(ex.Data["secondParamValue"]);
-                        detail = args.Count > 0 ? string.Format(localized.Value, args.ToArray()) : localized.Value;
-                    }
-                }
-            }
-            catch
-            {
-                // »гнорируем ошибки локализации и используем исходное сообщение
-                detail = ex.Message;
-            }
+            // ‘ормируем детализацию ошибки: если в ресурсах нет строки Ч возвращаем код ошибки.
+            string detail = GetLocalizedDetailOrCode(ex, errorCode, context);
 
             var error = new ProblemDetails
             {
@@ -96,6 +76,79 @@ namespace EventManagerService
             error.Extensions["errorCode"] = errorCode;
 
             await context.Response.WriteAsJsonAsync(error);
+        }
+
+        private string GetLocalizedDetailOrCode(Exception ex, string errorCode, HttpContext context)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(errorCode))
+                    return errorCode ?? string.Empty;
+
+                var localized = _localizer[errorCode];
+                if (localized.ResourceNotFound)
+                {
+                    // если нет текста в ресурсах Ч возвращаем сам код ошибки
+                    return errorCode;
+                }
+
+                var template = localized.Value ?? string.Empty;
+
+                // »щем именованные плейсхолдеры {name}
+                var matches = System.Text.RegularExpressions.Regex.Matches(template, "\\{(?<name>[^}]+)\\}");
+                if (matches.Count == 0)
+                {
+                    return template;
+                }
+
+                // —обираем возможные значени€ дл€ подстановки
+                var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                replacements["Method"] = context.Request.Method;
+                replacements["Path"] = context.Request.Path.ToString();
+                replacements["RequestId"] = context.Request.Headers["x-request-id"].ToString();
+
+                if (ex?.Data != null)
+                {
+                    foreach (var key in ex.Data.Keys)
+                    {
+                        try
+                        {
+                            var keyStr = key?.ToString() ?? string.Empty;
+                            var val = ex.Data[key]?.ToString() ?? string.Empty;
+                            if (!string.IsNullOrEmpty(keyStr))
+                                replacements[keyStr] = val;
+                        }
+                        catch
+                        {
+                            // пропускаем
+                        }
+                    }
+                }
+
+                // ”бедимс€, что дл€ всех плейсхолдеров есть значение; если нет Ч возвращаем шаблон без изменений
+                foreach (System.Text.RegularExpressions.Match m in matches)
+                {
+                    var name = m.Groups["name"].Value;
+                    if (!replacements.ContainsKey(name))
+                    {
+                        return template;
+                    }
+                }
+
+                // ¬ыполн€ем подстановку
+                var result = template;
+                foreach (var kv in replacements)
+                {
+                    result = result.Replace("{" + kv.Key + "}", kv.Value);
+                }
+
+                return result;
+            }
+            catch
+            {
+                // в случае ошибок в локализации безопасно возвращаем код ошибки
+                return errorCode;
+            }
         }
 
         private static int MapStatusCode(Exception ex) => ex switch
