@@ -2,9 +2,9 @@
 using EventManagerService.Application;
 using EventManagerService.Domain;
 using EventManagerService.Infrastructure;
-using EventManagerService.Presentation;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using EventManagerService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +17,8 @@ builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 builder.Services.AddDomain();
 builder.Services.AddPresentation();
+// Регистрация сервисов локализации, чтобы IStringLocalizerFactory был доступен в DI
+builder.Services.AddLocalization();
 
 
 

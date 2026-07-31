@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 using Npgsql;
 using Xunit;
+using EventManagerService.Domain.Models;
 
 namespace EventService.IntegrationTests
 {
@@ -39,7 +40,7 @@ namespace EventService.IntegrationTests
         {
             NpgsqlConnection.ClearAllPools();
             await using var ctx = CreateContext();
-            ctx.Database.EnsureCreated();
+
             try
             {
                 ctx.Database.ExecuteSqlRaw("TRUNCATE TABLE \"Bookings\" CASCADE;");
@@ -47,7 +48,7 @@ namespace EventService.IntegrationTests
             }
             catch
             {
-                // ignore if tables don't exist yet
+                
             }
         }
 
@@ -59,22 +60,26 @@ namespace EventService.IntegrationTests
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
 
-            var ev = EventManagerService.Domain.Models.DomainEvent.DomainEvent.Create("BookingEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var ev = DomainEvent.Create(Guid.NewGuid(), "BookingEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5, 5);
             var added = await eventRepo.AddAsync(ev);
 
-            var booking = await bookingRepo.CreateAsync(added.Id);
+            var bookingToCreate = new DomainBooking(added.Id);
+            var booking = await bookingRepo.CreateAsync(bookingToCreate);
             Assert.Equal(BookingStatus.Pending, booking.Status);
 
             var pending = await bookingRepo.GetByStateAsync(BookingStatus.Pending);
             Assert.Contains(pending, b => b.Id == booking.Id);
 
-            await bookingRepo.ConfirmAsync(booking.Id);
+            booking.SetBookingConfirmed(DateTime.UtcNow.AddMinutes(1));
+            await bookingRepo.ChangeBookingStateAsync(booking);
             var byId = await bookingRepo.GetByIdAsync(booking.Id);
             Assert.Equal(BookingStatus.Confirmed, byId.Status);
 
-            // create another
-            var booking2 = await bookingRepo.CreateAsync(added.Id);
-            await bookingRepo.RejectAsync(booking2.Id);
+            
+            var booking2ToCreate = new DomainBooking(added.Id);
+            var booking2 = await bookingRepo.CreateAsync(booking2ToCreate);
+            booking2.SetBookingRejected(DateTime.UtcNow.AddMinutes(2));
+            await bookingRepo.ChangeBookingStateAsync(booking2);
             var byId2 = await bookingRepo.GetByIdAsync(booking2.Id);
             Assert.Equal(BookingStatus.Rejected, byId2.Status);
         }
@@ -87,10 +92,11 @@ namespace EventService.IntegrationTests
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
 
-            var ev = EventManagerService.Domain.Models.DomainEvent.DomainEvent.Create("BookingEvent2", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5);
+            var ev = DomainEvent.Create(Guid.NewGuid(), "BookingEvent2", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5, 5);
             var added = await eventRepo.AddAsync(ev);
 
-            var booking = await bookingRepo.CreateAsync(added.Id);
+            var bookingToCreate = new DomainBooking(added.Id);
+            var booking = await bookingRepo.CreateAsync(bookingToCreate);
             var pendingIds = await bookingRepo.GetPendingIdsAsync(default);
             Assert.Contains(booking.Id, pendingIds);
         }

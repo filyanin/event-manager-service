@@ -1,9 +1,11 @@
 ﻿
+using EventManagerService.Application;
+using EventManagerService.Application.Interfaces;
 using EventManagerService.Domain;
-using EventManagerService.Domain.Interfaces.EventService;
 using EventManagerService.Infrastructure;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using EventManagerService.Application.DTOs;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventService.Tests
@@ -18,13 +20,19 @@ namespace EventService.Tests
             _dbName = Guid.NewGuid().ToString();
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
-            services.AddDomain();
+            services.AddApplication();  
             services.AddInfrastructure();
             _serviceProvider = services.BuildServiceProvider();
 
             using var scope = _serviceProvider.CreateScope();
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-            eventService.AddEventAsync("Test event", DateTime.MinValue, DateTime.MaxValue, 100).GetAwaiter().GetResult();
+            eventService.AddEventAsync(new InputEventDTO
+            {
+                Title = "Test event",
+                StartAt = DateTime.MinValue,
+                EndAt = DateTime.MaxValue,
+                TotalSeat = 100
+            }).GetAwaiter().GetResult();
         }
         [Fact]
         public async Task GetEventById_CorrectId_SuccessGetEvent()
@@ -32,7 +40,13 @@ namespace EventService.Tests
             using var scope = _serviceProvider.CreateScope();
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
 
-            var ev = await eventService.AddEventAsync("Event to update", DateTime.MinValue, DateTime.MaxValue, 100);
+            var ev = await eventService.AddEventAsync(new InputEventDTO
+            {
+                Title = "Event to update",
+                StartAt = DateTime.MinValue,
+                EndAt = DateTime.MaxValue,
+                TotalSeat = 100
+            });
 
             var anotherEvent = await eventService.GetEventByIdAsync(ev.Id);
 
@@ -44,7 +58,8 @@ namespace EventService.Tests
         {
             using var scope = _serviceProvider.CreateScope();
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => eventService.GetEventByIdAsync(Guid.NewGuid()));
+            var ex = await Assert.ThrowsAsync<EventManagerService.Shared.Exceptions.AppException>(() => eventService.GetEventByIdAsync(Guid.NewGuid()));
+            Assert.Equal(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound, ex.ErrorCode);
         }
 
     }

@@ -1,4 +1,5 @@
-﻿using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Application.DTOs;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,12 +16,12 @@ namespace EventService.Tests
             _context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
             // Используем репозиторий поверх InMemory DbContext и передаём его в сервис
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(_context);
-            eventService = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
-            eventService.AddEventAsync("Good Event To Test", DateTime.Parse("2026-04-01T11:24:14.444Z"), DateTime.Parse("2026-04-02T11:24:14.444Z"),1).GetAwaiter().GetResult();
-            eventService.AddEventAsync("Bad Event To Test", DateTime.Parse("2026-04-02T11:24:14.444Z"), DateTime.Parse("2026-04-03T11:24:14.444Z"), 1).GetAwaiter().GetResult();
-            eventService.AddEventAsync("Simple Event To Test", DateTime.Parse("2026-04-03T11:24:14.444Z"), DateTime.Parse("2026-04-04T11:24:14.444Z"), 1).GetAwaiter().GetResult();
-            eventService.AddEventAsync("Gooooood Event To Test", DateTime.Parse("2026-04-04T11:24:14.444Z"), DateTime.Parse("2026-04-05T11:24:14.444Z"), 1).GetAwaiter().GetResult();
-            eventService.AddEventAsync("Simple Event", DateTime.Parse("2026-04-05T11:24:14.444Z"), DateTime.Parse("2026-04-06T11:24:14.444Z"), 1).GetAwaiter().GetResult();
+            eventService = new EventManagerService.Application.Services.EventService(eventRepo);
+            eventService.AddEventAsync(new InputEventDTO { Title = "Good Event To Test", StartAt = DateTime.Parse("2026-04-01T11:24:14.444Z"), EndAt = DateTime.Parse("2026-04-02T11:24:14.444Z"), TotalSeat = 1 }).GetAwaiter().GetResult();
+            eventService.AddEventAsync(new InputEventDTO { Title = "Bad Event To Test", StartAt = DateTime.Parse("2026-04-02T11:24:14.444Z"), EndAt = DateTime.Parse("2026-04-03T11:24:14.444Z"), TotalSeat = 1 }).GetAwaiter().GetResult();
+            eventService.AddEventAsync(new InputEventDTO { Title = "Simple Event To Test", StartAt = DateTime.Parse("2026-04-03T11:24:14.444Z"), EndAt = DateTime.Parse("2026-04-04T11:24:14.444Z"), TotalSeat = 1 }).GetAwaiter().GetResult();
+            eventService.AddEventAsync(new InputEventDTO { Title = "Gooooood Event To Test", StartAt = DateTime.Parse("2026-04-04T11:24:14.444Z"), EndAt = DateTime.Parse("2026-04-05T11:24:14.444Z"), TotalSeat = 1 }).GetAwaiter().GetResult();
+            eventService.AddEventAsync(new InputEventDTO { Title = "Simple Event", StartAt = DateTime.Parse("2026-04-05T11:24:14.444Z"), EndAt = DateTime.Parse("2026-04-06T11:24:14.444Z"), TotalSeat = 1 }).GetAwaiter().GetResult();
 
             titles = new List<string>();
             titles.Add("Good Event To Test");
@@ -29,7 +30,7 @@ namespace EventService.Tests
             titles.Add("Gooooood Event To Test");
             titles.Add("Simple Event");
         }
-        [Fact] 
+        [Fact]
         public async Task GetAllEvent_EmptyFilters_SuccessGetAllEvents()
         {
             var tuple = await eventService.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, null), 1, 10);
@@ -127,7 +128,7 @@ namespace EventService.Tests
             List<string> expectedResult = new List<string>
             {
                 "Simple Event To Test"
-                
+
 
 
             };
@@ -156,7 +157,7 @@ namespace EventService.Tests
             List<string> expectedResult = new List<string>
             {
                 "Gooooood Event To Test"
-                
+
             };
             List<string> notExpectedResult = new List<string>
             {
@@ -175,17 +176,17 @@ namespace EventService.Tests
         }
 
         [Theory]
-        [InlineData(100,10,1, 10)]
+        [InlineData(100, 10, 1, 10)]
         [InlineData(8, 10, 1, 8)]
         public async Task GetAllEvent_PaginationData_SuccessGetFilteredEvents(int elementCounts, int pageSize, int pageNumber, int expectedPageSize)
         {
             var options = new DbContextOptionsBuilder<EventManagerService.Infrastructure.DataAssets.AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
             var context = new EventManagerService.Infrastructure.DataAssets.AppDbContext(options);
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
-            var service = new EventManagerService.Domain.Services.EventService.EventService(eventRepo);
-            for (int i = 0; i < elementCounts; i++) 
+            var service = new EventManagerService.Application.Services.EventService(eventRepo);
+            for (int i = 0; i < elementCounts; i++)
             {
-                service.AddEventAsync("TestEvent", DateTime.MinValue, DateTime.MaxValue, 1).GetAwaiter().GetResult();
+                service.AddEventAsync(new InputEventDTO { Title = "TestEvent", StartAt = DateTime.MinValue, EndAt = DateTime.MaxValue, TotalSeat = 1 }).GetAwaiter().GetResult();
             }
 
             var tuple = await service.GetAllEventAsync(new EventManagerService.Domain.Filters.EventsFilters(null, null, null), pageNumber, pageSize);

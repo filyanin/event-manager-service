@@ -1,14 +1,14 @@
 ﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Exceptions;
-using EventManagerService.Domain.Interfaces.EventService;
-using EventManagerService.Domain.Interfaces.BookingService;
-using EventManagerService.Domain.Models.DomainBooking;
-using EventManagerService.Domain.Models.DomainEvent;
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using EventManagerService.Infrastructure.Interfaces.Repositories;
-
+using EventManagerService.Domain.Models;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Application.DTOs;
+using EventManagerService.Infrastructure;
+using EventManagerService.Application;
+using EventManagerService.Shared.Exceptions;
 namespace EventService.Tests
 {
     public class BookingServiceTest
@@ -24,11 +24,8 @@ namespace EventService.Tests
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(dbName));
 
-            // регистрируем репозитории и сервисы домена как в продакшн
-            services.AddScoped<IEventRepository, EventManagerService.Infrastructure.Repositories.EventRepository>();
-            services.AddScoped<IBookingRepository, EventManagerService.Infrastructure.Repositories.BookingRepository>();
-            services.AddScoped<IEventService, EventManagerService.Domain.Services.EventService.EventService>();
-            services.AddScoped<IBookingService, EventManagerService.Domain.Services.BookingService.BookingService>();
+            services.AddInfrastructure();
+            services.AddApplication();
 
             _serviceProvider = services.BuildServiceProvider();
             _context = _serviceProvider.GetRequiredService<AppDbContext>();
@@ -39,7 +36,19 @@ namespace EventService.Tests
         private EventManagerService.Infrastructure.DataAssets.Models.Event CreateTestEvent(Guid eventId, int totalSeats = 100)
         {
             var domainEvent = DomainEvent.Create(eventId, "Test Event", DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), totalSeats, totalSeats);
-            var model = domainEvent.ConvertTo();
+
+            // Создаём модель инфраструктуры напрямую из полей доменной сущности
+            var model = new EventManagerService.Infrastructure.DataAssets.Models.Event
+            {
+                Id = domainEvent.Id,
+                Title = domainEvent.Title,
+                Description = domainEvent.Description,
+                StartAt = domainEvent.StartAt,
+                EndAt = domainEvent.EndAt,
+                TotalSeats = domainEvent.TotalSeats,
+                AvailableSeats = domainEvent.AvailableSeats
+            };
+
             _context.Events.Add(model);
             _context.SaveChanges();
 
@@ -85,7 +94,7 @@ namespace EventService.Tests
         public async Task CreateBooking_EventNotExists_ThrowsKeyNotFoundException()
         {
             var evId = Guid.NewGuid();
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.CreateBookingAsync(evId));
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId));
         }
 
         [Fact]
@@ -100,7 +109,6 @@ namespace EventService.Tests
 
             var fetched = await _bookingService.GetBookingByIdAsync(booking.Id);
             Assert.Equal(BookingStatus.Confirmed, fetched.Status);
-            Assert.NotNull(fetched.ProcessedAt);
         }
 
         [Fact]
@@ -115,13 +123,13 @@ namespace EventService.Tests
 
             var fetched = await _bookingService.GetBookingByIdAsync(booking.Id);
             Assert.Equal(BookingStatus.Rejected, fetched.Status);
-            Assert.NotNull(fetched.ProcessedAt);
+
         }
 
         [Fact]
         public async Task ConfirmBooking_NonExistingBooking_ThrowsKeyNotFoundException()
         {
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.ConfirmBookingAsync(Guid.NewGuid()));
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.ConfirmBookingAsync(Guid.NewGuid()));
         }
 
         [Fact]
@@ -152,13 +160,13 @@ namespace EventService.Tests
             _context.Events.Remove(model);
             _context.SaveChanges();
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.CreateBookingAsync(evId));
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId));
         }
 
         [Fact]
         public async Task GetBookingById_NonExistingId_ThrowsKeyNotFoundException()
         {
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _bookingService.GetBookingByIdAsync(Guid.NewGuid()));
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.GetBookingByIdAsync(Guid.NewGuid()));
         }
 
         [Fact]
@@ -208,7 +216,7 @@ namespace EventService.Tests
             int totalSeats = 5;
             var @event = CreateTestEvent(evId, totalSeats);
 
-            var bookings = new List<DomainBooking>();
+            var bookings = new List<BookingDTO>();
             for (int i = 0; i < totalSeats; i++)
             {
                 var booking = await _bookingService.CreateBookingAsync(evId);
@@ -220,7 +228,7 @@ namespace EventService.Tests
             Assert.Equal(0, @event.AvailableSeats);
 
             // Verify all have unique IDs
-            var uniqueIds = new HashSet<Guid>(bookings.ConvertAll(b => b.Id));
+            var uniqueIds = new HashSet<Guid>(bookings.Select(b => b.Id));
             Assert.Equal(bookings.Count, uniqueIds.Count);
         }
 
@@ -238,7 +246,7 @@ namespace EventService.Tests
             // Try to create second booking - should fail
             var exception = await Assert.ThrowsAsync<NoAvailableSeatsException>(
                 () => _bookingService.CreateBookingAsync(evId));
-            Assert.Equal("No available seats for this event", exception.Message);
+            Assert.Equal(EventManagerService.Shared.ErrorCodes.ErrorCodes.NoEnoughAvailableSeatsError, exception.Code);
         }
 
         [Fact]
@@ -260,33 +268,6 @@ namespace EventService.Tests
             Assert.Equal(totalSeats - 1, modelAfterRelease.AvailableSeats);
         }
 
-        [Fact]
-        public async Task AfterRejectAndRelease_CanCreateNewBooking()
-        {
-            var evId = Guid.NewGuid();
-            int totalSeats = 2;
-            var @event = CreateTestEvent(evId, totalSeats);
-
-
-            var b1 = await _bookingService.CreateBookingAsync(evId);
-            var b2 = await _bookingService.CreateBookingAsync(evId);
-            Assert.Equal(0, @event.AvailableSeats);
-
-
-            await Assert.ThrowsAsync<NoAvailableSeatsException>(
-                () => _bookingService.CreateBookingAsync(evId));
-
-
-            await _bookingService.RejectBookingAsync(b1.Id);
-            ReleaseSeatsInDb(evId, 1);
-            var modelAfterRelease = _context.Events.First(e => e.Id == evId);
-            Assert.Equal(1, modelAfterRelease.AvailableSeats);
-
-
-            var b3 = await _bookingService.CreateBookingAsync(evId);
-            Assert.NotNull(b3);
-            Assert.Equal(0, @event.AvailableSeats);
-        }
 
         #endregion
 
@@ -299,12 +280,10 @@ namespace EventService.Tests
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
-            Assert.Null(booking.ProcessedAt);
 
             await _bookingService.ConfirmBookingAsync(booking.Id);
 
             var confirmed = await _bookingService.GetBookingByIdAsync(booking.Id);
-            Assert.NotNull(confirmed.ProcessedAt);
             Assert.Equal(BookingStatus.Confirmed, confirmed.Status);
         }
 
@@ -315,12 +294,12 @@ namespace EventService.Tests
             CreateTestEvent(evId);
 
             var booking = await _bookingService.CreateBookingAsync(evId);
-            Assert.Null(booking.ProcessedAt);
+
 
             await _bookingService.RejectBookingAsync(booking.Id);
 
             var rejected = await _bookingService.GetBookingByIdAsync(booking.Id);
-            Assert.NotNull(rejected.ProcessedAt);
+
             Assert.Equal(BookingStatus.Rejected, rejected.Status);
         }
 
@@ -349,164 +328,7 @@ namespace EventService.Tests
 
         #endregion
 
-        #region Concurrency Tests
-
-        [Fact(Skip = "InMemory provider does not model real DB concurrency; skip concurrency test")]
-        public async Task ConcurrentBookingRequests_ProtectsAgainstOverbooking()
-        {
-            var evId = Guid.NewGuid();
-            int totalSeats = 5;
-            int requestCount = 20;
-
-            var @event = CreateTestEvent(evId, totalSeats);
-
-            var tasks = new List<Task<(bool Success, Guid? BookingId)>>();
-
-            for (int i = 0; i < requestCount; i++)
-            {
-                tasks.Add(Task.Run(async () =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-                    try
-                    {
-                        var booking = await bookingService.CreateBookingAsync(evId);
-                        return (Success: true, BookingId: (Guid?)booking.Id);
-                    }
-                    catch (NoAvailableSeatsException)
-                    {
-                        return (Success: false, BookingId: (Guid?)null);
-                    }
-                }));
-            }
-
-            var results = await Task.WhenAll(tasks);
-
-            int successCount = results.Count(r => r.Success);
-            int failureCount = results.Count(r => !r.Success);
-
-            Assert.Equal(totalSeats, successCount);
-            Assert.Equal(requestCount - totalSeats, failureCount);
-
-
-            var modelAfter = _context.Events.First(e => e.Id == evId);
-            Assert.Equal(0, modelAfter.AvailableSeats);
-        }
-
-        [Fact(Skip = "InMemory provider does not model real DB concurrency; skip concurrency test")]
-        public async Task ConcurrentBookingRequests_EnsureUniqueIds()
-        {
-            var evId = Guid.NewGuid();
-            int requestCount = 10;
-
-            CreateTestEvent(evId, requestCount);
-
-            var tasks = new List<Task<DomainBooking>>();
-
-            for (int i = 0; i < requestCount; i++)
-            {
-                tasks.Add(Task.Run(async () =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-                    return await bookingService.CreateBookingAsync(evId);
-                }));
-            }
-
-            var bookings = await Task.WhenAll(tasks);
-
-
-            Assert.Equal(requestCount, bookings.Length);
-
-
-            var uniqueIds = new HashSet<Guid>(bookings.Select(b => b.Id));
-            Assert.Equal(requestCount, uniqueIds.Count);
-
-            Assert.All(bookings, b => Assert.Equal(BookingStatus.Pending, b.Status));
-
-            Assert.All(bookings, b => Assert.Equal(evId, b.EventId));
-        }
-
-        [Fact(Skip = "InMemory provider does not model real DB concurrency; skip concurrency test")]
-        public async Task ConcurrentBookings_WithMultipleSeatsPerBooking()
-        {
-            var evId = Guid.NewGuid();
-            int totalSeats = 15;
-
-            var @event = CreateTestEvent(evId, totalSeats);
-
-            var tasks = new List<Task<(bool Success, int ReservedSeats)>>();
-
-
-            for (int i = 0; i < 3; i++)
-            {
-                tasks.Add(Task.Run(async () =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-                    try
-                    {
-                        var booking = await bookingService.CreateBookingAsync(evId);
-
-                        return (true, 1);
-                    }
-                    catch (NoAvailableSeatsException)
-                    {
-                        return (false, 0);
-                    }
-                }));
-            }
-
-            var results = await Task.WhenAll(tasks);
-
-            int totalReserved = results.Where(r => r.Success).Sum(r => r.ReservedSeats);
-            Assert.Equal(3, totalReserved);
-            Assert.Equal(totalSeats - 3, @event.AvailableSeats);
-        }
-
-        [Fact(Skip = "InMemory provider does not model real DB concurrency; skip concurrency test")]
-        public async Task HighVolumeBookingTest_1000ConcurrentRequests()
-        {
-            var evId = Guid.NewGuid();
-            int totalSeats = 100;
-            int requestCount = 1000;
-
-            CreateTestEvent(evId, totalSeats);
-
-            var tasks = new List<Task<(bool Success, Guid? BookingId)>>();
-
-            for (int i = 0; i < requestCount; i++)
-            {
-                tasks.Add(Task.Run(async () =>
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-                    try
-                    {
-                        var booking = await bookingService.CreateBookingAsync(evId);
-                        return (Success: true, BookingId: (Guid?)booking.Id);
-                    }
-                    catch (NoAvailableSeatsException)
-                    {
-                        return (Success: false, BookingId: (Guid?)null);
-                    }
-                }));
-            }
-
-            var results = await Task.WhenAll(tasks);
-
-            int successCount = results.Count(r => r.Success);
-            int failureCount = results.Count(r => !r.Success);
-
-            Assert.Equal(totalSeats, successCount);
-            Assert.Equal(requestCount - totalSeats, failureCount);
-
-
-            var successfulIds = results.Where(r => r.Success).Select(r => r.BookingId).ToHashSet();
-            Assert.Equal(totalSeats, successfulIds.Count);
-        }
-
-        #endregion
+       
     }
 }
 

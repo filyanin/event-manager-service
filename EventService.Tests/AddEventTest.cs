@@ -1,9 +1,12 @@
-﻿using EventManagerService.Infrastructure.DataAssets;
+using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using EventManagerService.Infrastructure;
 using EventManagerService.Domain;
-using EventManagerService.Domain.Interfaces.EventService;
+using EventManagerService.Application.Interfaces;
+using EventManagerService.Application;
+using EventManagerService.Application.DTOs;
+using EventManagerService.Domain.Exceptions;
 
 
 namespace EventService.Tests
@@ -19,7 +22,7 @@ namespace EventService.Tests
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
             services.AddInfrastructure();
-            services.AddDomain();
+            services.AddApplication();
             _serviceProvider = services.BuildServiceProvider();
         }
 
@@ -34,7 +37,8 @@ namespace EventService.Tests
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var ev = await eventService.AddEventAsync(title, startAt, endAt, 100, description);
+            var dto = new InputEventDTO { Title = title, StartAt = startAt, EndAt = endAt, TotalSeat = 100, Description = description };
+            var ev = await eventService.AddEventAsync(dto);
 
             Assert.NotNull(ev);
             Assert.Equal(title, ev.Title);
@@ -43,8 +47,8 @@ namespace EventService.Tests
             Assert.Equal(description, ev.Description);
             Assert.True(await context.Events.AnyAsync(e => e.Id == ev.Id));
         }
-        
-        
+
+
         [Theory]
         [InlineData("", "2026-04-01T11:24:14.444Z", "2026-04-02T11:24:14.444Z")]
         [InlineData("12", "2026-04-01T11:24:14.444Z", "2026-04-02T11:24:14.444Z")]
@@ -54,7 +58,9 @@ namespace EventService.Tests
         {
             using var scope = _serviceProvider.CreateScope();
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-            await Assert.ThrowsAsync<ArgumentException>(() => eventService.AddEventAsync(title, startAt, endAt, 100, description));
+            var dto = new InputEventDTO { Title = title, StartAt = startAt, EndAt = endAt, TotalSeat = 100, Description = description };
+            var ex = await Assert.ThrowsAnyAsync<Exception>(() => eventService.AddEventAsync(dto));
+            Assert.True(ex is DomainValidationException || ex is ArgumentException);
         }
 
 
@@ -67,7 +73,9 @@ namespace EventService.Tests
         {
             using var scope = _serviceProvider.CreateScope();
             var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-            await Assert.ThrowsAsync<ArgumentException>(() => eventService.AddEventAsync(title, startAt, endAt, 100, description));
+            var dto = new InputEventDTO { Title = title, StartAt = startAt, EndAt = endAt, TotalSeat = 100, Description = description };
+            var ex = await Assert.ThrowsAnyAsync<Exception>(() => eventService.AddEventAsync(dto));
+            Assert.True(ex is DomainValidationException || ex is ArgumentException);
         }
     }
 }

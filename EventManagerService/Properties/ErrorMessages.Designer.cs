@@ -61,11 +61,92 @@ namespace EventManagerService.Properties {
         }
         
         /// <summary>
-        ///   Ищет локализованную строку, похожую на {0} must be greater than {1}.
+        ///   Ищет локализованную строку, похожую на Booking {0} confirmed successfully.
+        /// </summary>
+        internal static string BookingConfirmed {
+            get {
+                return ResourceManager.GetString("BookingConfirmed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Booking {0} not found when processing.
+        /// </summary>
+        internal static string BookingNotFoundWhenProcessing {
+            get {
+                return ResourceManager.GetString("BookingNotFoundWhenProcessing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Booking {0} not found when attempting to release resources.
+        /// </summary>
+        internal static string BookingNotFoundWhenReleasing {
+            get {
+                return ResourceManager.GetString("BookingNotFoundWhenReleasing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Booking {0} processing cancelled.
+        /// </summary>
+        internal static string BookingProcessingCancelled {
+            get {
+                return ResourceManager.GetString("BookingProcessingCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Error processing booking {0}. Rejecting and releasing seats.
+        /// </summary>
+        internal static string BookingProcessingErrorRejecting {
+            get {
+                return ResourceManager.GetString("BookingProcessingErrorRejecting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Error in BookingBackgroundService.
+        /// </summary>
+        internal static string ErrorInBookingBackgroundService {
+            get {
+                return ResourceManager.GetString("ErrorInBookingBackgroundService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Event {0} not found. Booking {1} rejected..
+        /// </summary>
+        internal static string EventNotFoundBookingRejected {
+            get {
+                return ResourceManager.GetString("EventNotFoundBookingRejected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на Failed to release resources for booking {0}.
+        /// </summary>
+        internal static string FailedToReleaseResources {
+            get {
+                return ResourceManager.GetString("FailedToReleaseResources", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на {firstParamName} ({firstParamValue}) must be greater than {secondParamName} ({SecondParamName}).
         /// </summary>
         internal static string GreaterThanValidationError {
             get {
                 return ResourceManager.GetString("GreaterThanValidationError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на No available seats for this event.
+        /// </summary>
+        internal static string NoAvailableSeatsError {
+            get {
+                return ResourceManager.GetString("NoAvailableSeatsError", resourceCulture);
             }
         }
         

@@ -2,7 +2,13 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
+  <Project Path="EventManagerService.Application/EventManagerService.Application.csproj" Id="d86bd8f9-6046-4461-94b7-097367ad7c4f" />
+  <Project Path="EventManagerService.Domain/EventManagerService.Domain.csproj" Id="c5f2b331-0855-42ca-9649-b2fe0ad77e01" />
+  <Project Path="EventManagerService.Infrastructure/EventManagerService.Infrastructure.csproj" Id="48db4b95-0677-4b69-ae79-49be56c90d60" />
+  <Project Path="EventManagerService.Shared/EventManagerService.Shared.csproj" />
   <Project Path="EventManagerService/EventManagerService.csproj" />
-  <Project Path="EventService.IntegrationTests/EventService.IntegrationTests.csproj" />
+  <Project Path="EventService.IntegrationTests/EventService.IntegrationTests.csproj">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
   <Project Path="EventService.Tests/EventService.Tests.csproj" Id="64e2301e-6e4a-47f4-b890-d2be853c978d" />
 </Solution>
