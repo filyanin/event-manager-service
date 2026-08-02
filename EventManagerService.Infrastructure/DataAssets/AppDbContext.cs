@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using EventManagerService.Infrastructure.DataAssets.Users;
+using System;
+using EventManagerService.Infrastructure.DataAssets.Users;
 
 namespace EventManagerService.Infrastructure.DataAssets
 {
@@ -10,10 +13,18 @@ namespace EventManagerService.Infrastructure.DataAssets
 
         public DbSet<Models.Event> Events => Set<Models.Event>();
         public DbSet<Models.Booking> Bookings => Set<Models.Booking>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Role> Roles => Set<Role>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = new Guid("11111111-1111-1111-1111-111111111111"), Name = "user", IsAdmin = false },
+                new Role { Id = new Guid("22222222-2222-2222-2222-222222222222"), Name = "admin", IsAdmin = true }
+            );
         }
 
     }

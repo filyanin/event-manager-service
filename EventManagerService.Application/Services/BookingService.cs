@@ -14,16 +14,16 @@ namespace EventManagerService.Application.Services
 
         public BookingService(IBookingRepository bookingRepository, IEventRepository eventRepository)
         {
-            _bookingRepository = bookingRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(bookingRepository));
-            _eventRepository = eventRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(eventRepository));
+            _bookingRepository = bookingRepository ?? throw new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(bookingRepository));
+            _eventRepository = eventRepository ?? throw new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(eventRepository));
         }
 
-        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, int seatsToReserve = 1)
+        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, Guid userId, int seatsToReserve = 1)
         {
 
             if (!await _eventRepository.ExistsAsync(eventId))
             {
-                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
+                var ex = new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(eventId);
                 ex.Data["firstParamValue"] = eventId;
                 throw ex;

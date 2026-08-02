@@ -1,5 +1,6 @@
 ﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Models;
+using EventManagerService.Infrastructure.DataAssets.Users;
 
 namespace EventManagerService.Infrastructure.DataAssets.Models
 {
@@ -16,6 +17,8 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
         public DateTime? ProcessedAt { get; set; }
 
         public Event Event { get; set; }
+
+        public User User { get; set; }
 
         public Booking() { }
 

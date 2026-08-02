@@ -6,7 +6,7 @@ namespace EventManagerService.Application.Interfaces
 {
     public interface IBookingService
     {
-        public Task<BookingDTO> CreateBookingAsync(Guid eventId, int seatsToReserve = 1);
+        public Task<BookingDTO> CreateBookingAsync(Guid eventId, Guid userId, int seatsToReserve = 1);
 
         public Task<BookingDTO> GetBookingByIdAsync(Guid bookingId);
 
