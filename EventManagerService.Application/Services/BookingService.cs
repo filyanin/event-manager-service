@@ -162,5 +162,10 @@ namespace EventManagerService.Application.Services
             await _bookingRepository.ChangeBookingStateAsync(booking);
             await _eventRepository.ReleaseSeatsAsync(@event);
         }
+
+        public Task CancelBookingAsync(Guid bookingId, Guid userId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

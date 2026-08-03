@@ -15,5 +15,7 @@ namespace EventManagerService.Application.Interfaces
         public Task ConfirmBookingAsync(Guid bookingId);
 
         public Task RejectBookingAsync(Guid bookingId);
+
+        public Task CancelBookingAsync (Guid bookingId, Guid userId);
     }
 }

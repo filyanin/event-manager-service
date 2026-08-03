@@ -22,7 +22,8 @@ namespace EventManagerService.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<BookingDTO>> CreateBooking(Guid id)
         {
-            var booking = await _bookingService.CreateBookingAsync(id);
+            var booking = await _bookingService.CreateBookingAsync(id, Guid.NewGuid());
+            throw new NotImplementedException();
             return AcceptedAtAction(nameof(GetBookingById), new { id = booking.Id }, booking);
         }
 
