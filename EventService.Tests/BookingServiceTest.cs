@@ -518,6 +518,194 @@ namespace EventService.Tests
         }
 
         #endregion
+
+        #region Booking Cancellation Tests
+
+        [Fact]
+        public async Task CancelBooking_PendingBooking_SuccessfullyCancelled()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+            Assert.Equal(BookingStatus.Pending, booking.Status);
+
+            // Отмена бронирования
+            await _bookingService.CancelBookingAsync(booking.Id, userId);
+
+            var cancelledBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Cancelled, cancelledBooking.Status);
+        }
+
+        [Fact]
+        public async Task CancelBooking_ConfirmedBooking_SuccessfullyCancelled()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+            await _bookingService.ConfirmBookingAsync(booking.Id);
+
+            var confirmedBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Confirmed, confirmedBooking.Status);
+
+            // Отмена подтвержденной бронирования
+            await _bookingService.CancelBookingAsync(booking.Id, userId);
+
+            var cancelledBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Cancelled, cancelledBooking.Status);
+        }
+
+        [Fact]
+        public async Task CancelBooking_ReleasesSeats()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var @event = CreateTestEvent(evId, 5);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+            var eventAfterBooking = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(4, eventAfterBooking.AvailableSeats);
+
+            // Отмена бронирования должна освободить место
+            await _bookingService.CancelBookingAsync(booking.Id, userId);
+
+            var eventAfterCancellation = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(5, eventAfterCancellation.AvailableSeats);
+        }
+
+        [Fact]
+        public async Task CancelBooking_DoubleCancellation_ThrowsException()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+
+            // Первая отмена - успешна
+            await _bookingService.CancelBookingAsync(booking.Id, userId);
+
+            // Вторая попытка отмены должна выбросить исключение
+            // (защита от повторной отмены - бронирование уже в статусе Cancelled)
+            await Assert.ThrowsAsync<EventManagerService.Domain.Exceptions.GreaterThenValidationException>(
+                () => _bookingService.CancelBookingAsync(booking.Id, userId));
+        }
+
+        [Fact]
+        public async Task CancelBooking_RejectedBooking_ThrowsException()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+
+            // Отклонение бронирования
+            await _bookingService.RejectBookingAsync(booking.Id);
+
+            // Попытка отмены отклоненной бронирования должна выбросить исключение
+            // (отклоненная бронирование не может быть отменена)
+            await Assert.ThrowsAsync<EventManagerService.Domain.Exceptions.GreaterThenValidationException>(
+                () => _bookingService.CancelBookingAsync(booking.Id, userId));
+        }
+
+        [Fact]
+        public async Task CancelBooking_NonExistingBooking_ThrowsNotFoundException()
+        {
+            var userId = Guid.NewGuid();
+            var fakeBookingId = Guid.NewGuid();
+
+            await Assert.ThrowsAsync<AppException>(
+                () => _bookingService.CancelBookingAsync(fakeBookingId, userId));
+        }
+
+        [Fact]
+        public async Task CancelBooking_UserCancelOwnBooking_SuccessfullyCancelled()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+
+            // Пользователь отменяет свою бронь
+            await _bookingService.CancelBookingAsync(booking.Id, userId, "user");
+
+            var cancelledBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Cancelled, cancelledBooking.Status);
+        }
+
+        [Fact]
+        public async Task CancelBooking_UserCancelOtherUserBooking_ThrowsUnauthorizedException()
+        {
+            var evId = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId1);
+
+            // Другой пользователь пытается отменить чужую бронь
+            await Assert.ThrowsAsync<UnauthorizedBookingCancellationException>(
+                () => _bookingService.CancelBookingAsync(booking.Id, userId2, "user"));
+
+            // Бронирование должно остаться в статусе Pending
+            var bookingAfter = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Pending, bookingAfter.Status);
+        }
+
+        [Fact]
+        public async Task CancelBooking_AdminCancelOtherUserBooking_SuccessfullyCancelled()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var adminId = Guid.NewGuid();
+            CreateTestEvent(evId, 10);
+
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
+
+            // Администратор отменяет чужую бронь
+            await _bookingService.CancelBookingAsync(booking.Id, adminId, "admin");
+
+            var cancelledBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            Assert.Equal(BookingStatus.Cancelled, cancelledBooking.Status);
+        }
+
+        [Fact]
+        public async Task CancelBooking_DecreasesActiveBookingCount()
+        {
+            var userId = Guid.NewGuid();
+            const int testLimit = 3;
+
+            var eventIds = new List<Guid>();
+            var bookingIds = new List<Guid>();
+            for (int i = 0; i < testLimit; i++)
+            {
+                var eventId = Guid.NewGuid();
+                eventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+
+                var booking = await _bookingService.CreateBookingAsync(eventId, userId);
+                bookingIds.Add(booking.Id);
+            }
+
+            // У пользователя есть 3 активные брони
+            // Отменяем одну
+            await _bookingService.CancelBookingAsync(bookingIds[0], userId);
+
+            // Теперь должно быть 2 активные брони
+            // Создаем еще одну бронь для проверки (должна пройти успешно)
+            var newEventId = Guid.NewGuid();
+            CreateTestEvent(newEventId, 100);
+
+            var newBooking = await _bookingService.CreateBookingAsync(newEventId, userId);
+            Assert.NotNull(newBooking);
+        }
+
+        #endregion
     }
 }
 

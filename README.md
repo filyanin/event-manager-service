@@ -292,3 +292,254 @@ POST /events/{id}/book
 1. Создать заявку: `POST /events/{eventId}/book` → `202 Accepted`, `Location: /bookings/{bookingId}`
 2. Проверить заявку: `GET /bookings/{bookingId}` → `Pending`
 3. После фоновой обработки: `GET /bookings/{bookingId}` → `Confirmed`
+
+## Аутентификация и авторизация
+
+Сервис использует JWT (JSON Web Token) для защиты API. Все защищённые эндпоинты требуют действительного токена в заголовке `Authorization: Bearer {token}`.
+
+### Ролевая модель и разграничение прав
+
+В системе реализованы следующие роли:
+
+#### 1. **User (пользователь)** — роль по умолчанию
+- Имеет доступ к просмотру всех мероприятий: `GET /events`, `GET /events/{id}`
+- Может создавать бронирования: `POST /events/{id}/book`
+- Может просматривать свои бронирования: `GET /bookings/{id}`
+- Может отменять только свои собственные бронирования: `DELETE /bookings/{id}`
+- При попытке отменить бронирование другого пользователя получит ошибку `403 Forbidden`
+
+#### 2. **Admin (администратор)**
+- Имеет все права пользователя (просмотр, бронирование)
+- Может создавать новые мероприятия: `POST /events` требует роль `admin`
+- Может обновлять существующие мероприятия: `PUT /events/{id}` требует роль `admin`
+- Может удалять мероприятия: `DELETE /events/{id}` требует роль `admin`
+- Может отменять бронирования других пользователей (правило бизнес-логики)
+
+### Таблица разграничения доступа
+
+| Эндпоинт | GET | POST | PUT | DELETE | User | Admin | ТребуетAuth |
+|---|---|---|---|---|---|---|---|
+| `/auth/register` | - | ✓ | - | - | ✓ | ✓ | Нет |
+| `/auth/login` | - | ✓ | - | - | ✓ | ✓ | Нет |
+| `/events` | ✓ | ✓ | - | - | ✓ | ✓ | Нет (GET), Да (POST) |
+| `/events/{id}` | ✓ | - | ✓ | ✓ | ✓ | ✓ | Нет (GET), Да (PUT/DELETE) |
+| `/events/{id}/book` | - | ✓ | - | - | ✓ | ✓ | Да |
+| `/bookings/{id}` | ✓ | - | - | ✓ | ✓ | ✓ | Да |
+
+### Получение JWT-токена через Swagger
+
+#### 1. Регистрация нового пользователя
+
+- Откройте Swagger UI: `http://localhost:{port}/swagger/index.html`
+- Перейдите в секцию **Authentication**
+- Кликните на эндпоинт **POST /auth/register** и нажмите **Try it out**
+- Заполните тело запроса:
+
+```json
+{
+  "login": "john_doe",
+  "password": "securePassword123",
+  "role": "user"
+}
+```
+
+Допустимые значения `role`:
+- `"user"` — обычный пользователь (по умолчанию)
+- `"admin"` — администратор с полными правами
+
+Пример ответа (200 OK):
+
+```json
+{
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "login": "john_doe",
+  "role": "user",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJyb2xlIjoidXNlciIsImV4cCI6MTcwNDcxMTEwMCwiaXNzIjoiRXZlbnRNYW5hZ2VyU2VydmljZSIsImF1ZCI6IkV2ZW50TWFuYWdlclNlcnZpY2VDbGllbnRzIn0.SIGNATURE"
+}
+```
+
+#### 2. Вход существующего пользователя
+
+- В Swagger перейдите на **POST /auth/login**
+- Нажмите **Try it out**
+- Заполните тело запроса:
+
+```json
+{
+  "login": "john_doe",
+  "password": "securePassword123"
+}
+```
+
+Пример ответа (200 OK) — будет возвращён новый JWT-токен.
+
+#### 3. Использование токена в запросах
+
+После получения токена скопируйте значение поля `token` из ответа.
+
+В Swagger:
+
+1. Нажмите кнопку **Authorize** в правом верхнем углу
+2. В диалоговом окне введите в поле значение:
+
+```
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+3. Нажмите **Authorize** → все последующие запросы будут отправляться с этим токеном в заголовке `Authorization`
+
+Альтернативно, при использовании `curl` или другого HTTP-клиента:
+
+```bash
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:{port}/bookings/{id}
+```
+
+### Конфигурация JWT в приложении
+
+JWT-параметры хранятся в `appsettings.json` и управляются через класс `JwtSettings`:
+
+```json
+{
+  "JwtSettings": {
+    "Secret": "your-super-secret-key-at-least-32-characters-long-for-security",
+    "Issuer": "EventManagerService",
+    "Audience": "EventManagerServiceClients",
+    "ExpirationMinutes": 60
+  }
+}
+```
+
+#### Описание параметров
+
+- **Secret** — секретный ключ для подписи и проверки токенов
+  - Используется для подписания токена на сервере и проверки его подлинности
+  - Должен быть достаточно длинным (минимум 32 символа для HS256)
+  - **ВАЖНО: В production среде используйте криптографически стойкое значение и не коммитьте его в репозиторий!**
+
+- **Issuer** — издатель токена
+  - Должен совпадать с `ValidIssuer` при валидации токена
+  - По умолчанию: `EventManagerService`
+
+- **Audience** — аудитория токена
+  - Должна совпадать с `ValidAudience` при валидации
+  - По умолчанию: `EventManagerServiceClients`
+
+- **ExpirationMinutes** — время жизни токена в минутах
+  - Определяет, как долго токен остаётся действительным после выпуска
+  - По умолчанию: 60 минут
+  - Рекомендуется для production: 15–30 минут для повышения безопасности
+
+#### Рекомендации по безопасности для production
+
+1. **Использование переменных окружения**
+
+   Вместо хранения секрета в `appsettings.json`, используйте переменные окружения:
+
+   ```csharp
+   var secret = Environment.GetEnvironmentVariable("JWT_SECRET");
+   var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "EventManagerService";
+   var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "EventManagerServiceClients";
+   ```
+
+2. **Azure Key Vault** (рекомендуется для production)
+
+   Для Azure-hosted приложений используйте Azure Key Vault:
+
+   ```csharp
+   var keyVaultUrl = new Uri("https://your-keyvault.vault.azure.net/");
+   var credential = new DefaultAzureCredential();
+   var client = new SecretClient(keyVaultUrl, credential);
+   var secret = client.GetSecret("JwtSecret").Value.Value;
+   ```
+
+3. **AWS Secrets Manager** или **HashiCorp Vault** для других облачных платформ
+
+4. **Требования к секрету**
+   - Минимальная длина: 32 символа
+   - Используйте случайные символы, цифры, специальные символы
+   - Пример сильного секрета:
+     ```
+     7&mK9#xL2$qR5*wP1!vN4@bD8%fG3^hJ6
+     ```
+
+5. **Принцип наименьших привилегий**
+   - Предоставляйте только необходимые роли пользователям
+   - Регулярно проверяйте и отзывайте неиспользуемые токены
+   - Используйте short-lived токены (< 30 минут) в production
+
+6. **Слушайте критичные события**
+   - Логируйте все попытки несанкционированного доступа
+   - Мониторьте паттерны использования токенов
+   - Настройте alerts на повторяющиеся ошибки аутентификации
+
+#### Пример конфигурации для разработки
+
+`appsettings.Development.json`:
+
+```json
+{
+  "JwtSettings": {
+    "Secret": "development-super-secret-key-at-least-32-characters-for-testing",
+    "Issuer": "EventManagerService",
+    "Audience": "EventManagerServiceClients",
+    "ExpirationMinutes": 120
+  }
+}
+```
+
+#### Пример конфигурации для production (с переменными окружения)
+
+```powershell
+# Установка переменных окружения перед запуском приложения
+$env:JwtSettings__Secret = "your-strong-production-secret-key-here-with-32-plus-chars"
+$env:JwtSettings__Issuer = "EventManagerService"
+$env:JwtSettings__Audience = "EventManagerServiceClients"
+$env:JwtSettings__ExpirationMinutes = "15"
+
+dotnet run
+```
+
+Или через системные переменные окружения (Windows):
+
+```powershell
+setx JwtSettings__Secret "your-strong-production-secret-key-here-with-32-plus-chars"
+setx JwtSettings__Issuer "EventManagerService"
+setx JwtSettings__Audience "EventManagerServiceClients"
+setx JwtSettings__ExpirationMinutes "15"
+```
+
+### Обработка токенов в API
+
+При запросе к защищённому эндпоинту:
+
+1. Клиент отправляет токен в заголовке: `Authorization: Bearer {token}`
+2. Middleware аутентификации проверяет:
+   - Подпись токена (используя `Secret`)
+   - Издателя (Issuer)
+   - Аудиторию (Audience)
+   - Срок действия (ExpirationMinutes)
+3. Если валидация прошла успешно, извлекаются Claims (userId, role и т.д.)
+4. Claims становятся доступны в контроллерах через `User.FindFirst(ClaimTypes.NameIdentifier)` и т.д.
+5. Авторизация проверяет права доступа (например, `[Authorize(Roles = "admin")]`)
+
+### Пример использования Claims в коде
+
+```csharp
+[HttpPost("events/{id:guid}/book")]
+[Authorize]
+public async Task<ActionResult<BookingDTO>> CreateBooking(Guid id)
+{
+    // Получаем userId из JWT-токена
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+    {
+        return Unauthorized(new { message = "Invalid or missing user ID in token" });
+    }
+
+    // Получаем роль пользователя
+    var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "user";
+
+    var booking = await _bookingService.CreateBookingAsync(id, userId);
+    return AcceptedAtAction(nameof(GetBookingById), new { id = booking.Id }, booking);
+}
+```
