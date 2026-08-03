@@ -175,7 +175,7 @@ namespace EventManagerService.Application.Services
             await _eventRepository.ReleaseSeatsAsync(@event);
         }
 
-        public async Task CancelBookingAsync(Guid bookingId, Guid userId)
+        public async Task CancelBookingAsync(Guid bookingId, Guid userId, string userRole = "user")
         {
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
@@ -187,8 +187,8 @@ namespace EventManagerService.Application.Services
                 throw ex;
             }
 
-            // Проверка прав: пользователь может отменить только свою бронь
-            bool isAdmin = false; // TODO: реализовать проверку роли администратора
+            // Проверка прав: пользователь может отменить только свою бронь или администратор может отменить любую
+            bool isAdmin = userRole?.Equals("admin", StringComparison.OrdinalIgnoreCase) ?? false;
             if (booking.UserId != userId && !isAdmin)
             {
                 throw new UnauthorizedBookingCancellationException(

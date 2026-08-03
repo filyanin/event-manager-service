@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using EventManagerService.Infrastructure.DataAssets.Users;
+using EventManagerService.Application.Interfaces;
 using EventManagerService.Infrastructure.Security.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,7 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace EventManagerService.Infrastructure.Security
 {
     /// <summary>
-    /// Сервис для генерации подписанных JWT-токенов
+    /// РЎРµСЂРІРёСЃ РґР»СЏ РіРµРЅРµСЂР°С†РёРё РїРѕРґРїРёСЃР°РЅРЅС‹С… JWT-С‚РѕРєРµРЅРѕРІ
+    /// Р РµР°Р»РёР·СѓРµС‚ РёРЅС‚РµСЂС„РµР№СЃ ITokenService РёР· Application СЃР»РѕСЏ
     /// </summary>
     public class TokenService : ITokenService
     {
@@ -24,19 +25,21 @@ namespace EventManagerService.Infrastructure.Security
         }
 
         /// <summary>
-        /// Генерирует подписанный JWT-токен для пользователя
+        /// Р“РµРЅРµСЂРёСЂСѓРµС‚ РїРѕРґРїРёСЃР°РЅРЅС‹Р№ JWT-С‚РѕРєРµРЅ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         /// </summary>
-        /// <param name="user">Объект пользователя</param>
-        /// <returns>JWT-токен в виде строки</returns>
-        public string GenerateToken(User user)
+        /// <param name="userId">РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</param>
+        /// <param name="login">Р›РѕРіРёРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</param>
+        /// <param name="role">Р РѕР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ</param>
+        /// <returns>JWT-С‚РѕРєРµРЅ РІ РІРёРґРµ СЃС‚СЂРѕРєРё</returns>
+        public string GenerateToken(Guid userId, string login, string role)
         {
             try
             {
                 var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Name, user.Login),
-                    new Claim(ClaimTypes.Role, user.Role?.Name ?? "User")
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Name, login),
+                    new Claim(ClaimTypes.Role, role ?? "User")
                 };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -53,13 +56,13 @@ namespace EventManagerService.Infrastructure.Security
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var jwt = tokenHandler.WriteToken(token);
 
-                _logger.LogInformation($"JWT-токен успешно сгенерирован для пользователя {user.Login}");
+                _logger.LogInformation($"JWT-С‚РѕРєРµРЅ СѓСЃРїРµС€РЅРѕ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {login}");
 
                 return jwt;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка при генерации JWT-токена: {ex.Message}");
+                _logger.LogError($"РћС€РёР±РєР° РїСЂРё РіРµРЅРµСЂР°С†РёРё JWT-С‚РѕРєРµРЅР°: {ex.Message}");
                 throw;
             }
         }

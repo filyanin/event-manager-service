@@ -16,6 +16,12 @@ namespace EventManagerService.Application.Interfaces
 
         public Task RejectBookingAsync(Guid bookingId);
 
-        public Task CancelBookingAsync (Guid bookingId, Guid userId);
+        /// <summary>
+        /// Отменяет бронирование пользователя
+        /// </summary>
+        /// <param name="bookingId">Идентификатор бронирования</param>
+        /// <param name="userId">Идентификатор текущего пользователя</param>
+        /// <param name="userRole">Роль текущего пользователя (для проверки прав доступа)</param>
+        public Task CancelBookingAsync(Guid bookingId, Guid userId, string userRole = "user");
     }
 }

@@ -21,5 +21,8 @@ public static class ErrorCodes
     public const string PastEventBookingError = "PAST_EVENT_BOOKING_ERROR";
     public const string ActiveBookingsLimitExceededError = "ACTIVE_BOOKINGS_LIMIT_EXCEEDED_ERROR";
     public const string UnauthorizedBookingCancellationError = "UNAUTHORIZED_BOOKING_CANCELLATION_ERROR";
+    public const string UnauthorizedOperationError = "UNAUTHORIZED_OPERATION_ERROR";
+    public const string InvalidCredentialsError = "INVALID_CREDENTIALS_ERROR";
+    public const string UserAlreadyExistsError = "USER_ALREADY_EXISTS_ERROR";
     // Добавляйте сюда новые коды по мере необходимости
 }

@@ -11,6 +11,7 @@ namespace EventManagerService.Application
 
             services.AddScoped<IEventService, EventService>();
             services.AddScoped<IBookingService, BookingService>();
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
 
             services.AddHostedService<BookingBackgroundService>();
 

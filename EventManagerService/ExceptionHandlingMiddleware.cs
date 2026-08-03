@@ -161,6 +161,7 @@ namespace EventManagerService
             ActiveBookingsLimitException => StatusCodes.Status409Conflict,
             PastEventBookingException => StatusCodes.Status400BadRequest,
             UnauthorizedBookingCancellationException => StatusCodes.Status403Forbidden,
+            UnauthorizedOperationException => StatusCodes.Status403Forbidden,
             UnauthorizedAccessException => StatusCodes.Status403Forbidden,
             HightLoadException => StatusCodes.Status429TooManyRequests,
             _ => StatusCodes.Status500InternalServerError
@@ -176,6 +177,7 @@ namespace EventManagerService
             ActiveBookingsLimitException => ErrorCodes.Conflict,
             PastEventBookingException => ErrorCodes.PastEventBookingError,
             UnauthorizedBookingCancellationException => ErrorCodes.UnauthorizedBookingCancellationError,
+            UnauthorizedOperationException => ErrorCodes.UnauthorizedOperationError,
             UnauthorizedAccessException => ErrorCodes.Forbidden,
             HightLoadException => ErrorCodes.HighLoad,
             _ => ErrorCodes.Unknown

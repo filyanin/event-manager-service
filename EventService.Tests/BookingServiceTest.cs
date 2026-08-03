@@ -87,7 +87,6 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateBooking_EventExists_CreatesBooking()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             CreateTestEvent(evId);
 
@@ -106,7 +105,6 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateBooking_EventNotExists_ThrowsKeyNotFoundException()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId, Guid.NewGuid()));
         }
@@ -114,7 +112,6 @@ namespace EventService.Tests
         [Fact]
         public async Task ConfirmBooking_ExistingBooking_ChangesStatusToConfirmed()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             CreateTestEvent(evId);
 
@@ -129,7 +126,6 @@ namespace EventService.Tests
         [Fact]
         public async Task RejectBooking_ExistingBooking_ChangesStatusToRejected()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             CreateTestEvent(evId);
 
@@ -151,7 +147,6 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateMultipleBookings_SameEvent_UniqueIds()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             CreateTestEvent(evId);
 
