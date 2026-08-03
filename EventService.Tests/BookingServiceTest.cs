@@ -88,11 +88,12 @@ namespace EventService.Tests
         public async Task CreateBooking_EventExists_CreatesBooking()
         {
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
             using var scope = _serviceProvider.CreateScope();
             var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
-            var booking = await bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await bookingService.CreateBookingAsync(evId, userId);
 
             Assert.NotNull(booking);
             Assert.Equal(evId, booking.EventId);
@@ -106,16 +107,18 @@ namespace EventService.Tests
         public async Task CreateBooking_EventNotExists_ThrowsKeyNotFoundException()
         {
             var evId = Guid.NewGuid();
-            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId, Guid.NewGuid()));
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId, userId));
         }
 
         [Fact]
         public async Task ConfirmBooking_ExistingBooking_ChangesStatusToConfirmed()
         {
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
 
             await _bookingService.ConfirmBookingAsync(booking.Id);
 
@@ -127,15 +130,15 @@ namespace EventService.Tests
         public async Task RejectBooking_ExistingBooking_ChangesStatusToRejected()
         {
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
 
             await _bookingService.RejectBookingAsync(booking.Id);
 
             var fetched = await _bookingService.GetBookingByIdAsync(booking.Id);
             Assert.Equal(BookingStatus.Rejected, fetched.Status);
-
         }
 
         [Fact]
@@ -148,10 +151,12 @@ namespace EventService.Tests
         public async Task CreateMultipleBookings_SameEvent_UniqueIds()
         {
             var evId = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var b1 = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
-            var b2 = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var b1 = await _bookingService.CreateBookingAsync(evId, userId1);
+            var b2 = await _bookingService.CreateBookingAsync(evId, userId2);
 
             Assert.NotEqual(b1.Id, b2.Id);
             Assert.Equal(evId, b1.EventId);
@@ -161,11 +166,11 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateBooking_EventDeletedBetweenCalls_SecondCreateThrows()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var first = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var first = await _bookingService.CreateBookingAsync(evId, userId);
             Assert.NotNull(first);
 
             // Симулируем удаление события между вызовами
@@ -173,7 +178,7 @@ namespace EventService.Tests
             _context.Events.Remove(model);
             _context.SaveChanges();
 
-            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId, Guid.NewGuid()));
+            await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(evId, userId));
         }
 
         [Fact]
@@ -185,14 +190,15 @@ namespace EventService.Tests
         [Fact]
         public async Task GetBookingByState_ReturnsOnlyRequestedState()
         {
-            throw new NotImplementedException();
             var ev1 = Guid.NewGuid();
             var ev2 = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
             CreateTestEvent(ev1);
             CreateTestEvent(ev2);
 
-            var b1 = await _bookingService.CreateBookingAsync(ev1, Guid.NewGuid());
-            var b2 = await _bookingService.CreateBookingAsync(ev2, Guid.NewGuid());
+            var b1 = await _bookingService.CreateBookingAsync(ev1, userId1);
+            var b2 = await _bookingService.CreateBookingAsync(ev2, userId2);
 
             await _bookingService.ConfirmBookingAsync(b1.Id);
             await _bookingService.RejectBookingAsync(b2.Id);
@@ -213,21 +219,22 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateBooking_DecreasesAvailableSeats()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var @event = CreateTestEvent(evId, 100);
             int initialSeats = @event.AvailableSeats;
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
 
-            Assert.Equal(initialSeats - 1, @event.AvailableSeats);
+            // Получаем обновленное событие из БД
+            var updatedEvent = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(initialSeats - 1, updatedEvent.AvailableSeats);
             Assert.NotNull(booking);
         }
 
         [Fact]
         public async Task CreateMultipleBookings_UpToLimit_AllSuccessful()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             int totalSeats = 5;
             var @event = CreateTestEvent(evId, totalSeats);
@@ -235,13 +242,15 @@ namespace EventService.Tests
             var bookings = new List<BookingDTO>();
             for (int i = 0; i < totalSeats; i++)
             {
-                var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid() );
+                var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
                 bookings.Add(booking);
-                Assert.Equal(totalSeats - (i + 1), @event.AvailableSeats);
+
+                // Получаем обновленное событие для проверки
+                var updatedEvent = _context.Events.First(e => e.Id == evId);
+                Assert.Equal(totalSeats - (i + 1), updatedEvent.AvailableSeats);
             }
 
             Assert.Equal(totalSeats, bookings.Count);
-            Assert.Equal(0, @event.AvailableSeats);
 
             // Verify all have unique IDs
             var uniqueIds = new HashSet<Guid>(bookings.Select(b => b.Id));
@@ -251,41 +260,44 @@ namespace EventService.Tests
         [Fact]
         public async Task CreateBooking_ExhaustedSeats_ThrowsNoAvailableSeatsException()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
             var @event = CreateTestEvent(evId, 1);
 
             // Create first booking - succeeds
-            var booking1 = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking1 = await _bookingService.CreateBookingAsync(evId, userId1);
             Assert.NotNull(booking1);
-            Assert.Equal(0, @event.AvailableSeats);
+
+            var updatedEvent = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(0, updatedEvent.AvailableSeats);
 
             // Try to create second booking - should fail
             var exception = await Assert.ThrowsAsync<NoAvailableSeatsException>(
-                () => _bookingService.CreateBookingAsync(evId, Guid.NewGuid()));
+                () => _bookingService.CreateBookingAsync(evId, userId2));
             Assert.Equal(EventManagerService.Shared.ErrorCodes.ErrorCodes.NoEnoughAvailableSeatsError, exception.Code);
         }
 
         [Fact]
         public async Task ReleaseSeats_RestoresAvailability()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
             int totalSeats = 10;
             var @event = CreateTestEvent(evId, totalSeats);
 
-            // Резервируем 3 места
+            // Резервируем 3 места от разных пользователей
             await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
             await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
             await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
-            Assert.Equal(totalSeats - 3, @event.AvailableSeats);
+
+            var modelAfterBookings = _context.Events.First(e => e.Id == evId);
+            Assert.Equal(totalSeats - 3, modelAfterBookings.AvailableSeats);
 
             // Освобождаем 2 места через вспомогательную функцию работы с БД
             ReleaseSeatsInDb(evId, 2);
             var modelAfterRelease = _context.Events.First(e => e.Id == evId);
             Assert.Equal(totalSeats - 1, modelAfterRelease.AvailableSeats);
         }
-
 
         #endregion
 
@@ -294,11 +306,11 @@ namespace EventService.Tests
         [Fact]
         public async Task ConfirmBooking_FillsProcessedAt()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
 
             await _bookingService.ConfirmBookingAsync(booking.Id);
 
@@ -309,47 +321,203 @@ namespace EventService.Tests
         [Fact]
         public async Task RejectBooking_FillsProcessedAt()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             CreateTestEvent(evId);
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
-
+            var booking = await _bookingService.CreateBookingAsync(evId, userId);
 
             await _bookingService.RejectBookingAsync(booking.Id);
 
             var rejected = await _bookingService.GetBookingByIdAsync(booking.Id);
-
             Assert.Equal(BookingStatus.Rejected, rejected.Status);
         }
 
         [Fact]
         public async Task RejectBooking_ReleaseSeats_EnablesNewBooking()
         {
-            throw new NotImplementedException();
             var evId = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
             var @event = CreateTestEvent(evId, 1);
 
-            var booking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var booking = await _bookingService.CreateBookingAsync(evId, userId1);
 
             // После резерва проверяем модель в БД
             var modelAfterBooking = _context.Events.First(e => e.Id == evId);
             Assert.Equal(0, modelAfterBooking.AvailableSeats);
 
             await _bookingService.RejectBookingAsync(booking.Id);
+
             // освобождаем места через вспомогательную функцию для БД
             ReleaseSeatsInDb(evId, 1);
             var modelAfterRelease = _context.Events.First(e => e.Id == evId);
             Assert.Equal(1, modelAfterRelease.AvailableSeats);
 
-            var newBooking = await _bookingService.CreateBookingAsync(evId, Guid.NewGuid());
+            var newBooking = await _bookingService.CreateBookingAsync(evId, userId2);
             Assert.NotNull(newBooking);
             Assert.NotEqual(booking.Id, newBooking.Id);
         }
 
         #endregion
 
-       
+        #region Past Event Booking Tests
+
+        [Fact]
+        public async Task CreateBooking_PastEvent_ThrowsPastEventBookingException()
+        {
+            var evId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            // Создаем событие, которое уже прошло
+            var domainEvent = DomainEvent.Create(evId, "Past Event", DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddHours(-1), 100, 100);
+            var model = new EventManagerService.Infrastructure.DataAssets.Models.Event
+            {
+                Id = domainEvent.Id,
+                Title = domainEvent.Title,
+                Description = domainEvent.Description,
+                StartAt = domainEvent.StartAt,
+                EndAt = domainEvent.EndAt,
+                TotalSeats = domainEvent.TotalSeats,
+                AvailableSeats = domainEvent.AvailableSeats
+            };
+
+            _context.Events.Add(model);
+            _context.SaveChanges();
+
+            // Попытка забронировать прошедшее событие должна выбросить исключение
+            var exception = await Assert.ThrowsAsync<PastEventBookingException>(
+                () => _bookingService.CreateBookingAsync(evId, userId));
+            Assert.Equal(EventManagerService.Shared.ErrorCodes.ErrorCodes.PastEventBookingError, exception.Code);
+        }
+
+        #endregion
+
+        #region Active Bookings Limit Tests
+
+        [Fact]
+        public async Task CreateBooking_LimitNotReached_SuccessfulBooking()
+        {
+            var userId = Guid.NewGuid();
+            const int testLimit = 3; // Меньше чем реальный лимит 10
+
+            // Создаём несколько событий
+            var eventIds = new List<Guid>();
+            for (int i = 0; i < testLimit; i++)
+            {
+                var eventId = Guid.NewGuid();
+                eventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+            }
+
+            // Создаём бронирования для одного пользователя
+            for (int i = 0; i < testLimit; i++)
+            {
+                var booking = await _bookingService.CreateBookingAsync(eventIds[i], userId);
+                Assert.NotNull(booking);
+                Assert.Equal(eventIds[i], booking.EventId);
+            }
+        }
+
+        [Fact]
+        public async Task CreateBooking_MaxLimitExceeded_ThrowsActiveBookingsLimitException()
+        {
+            var userId = Guid.NewGuid();
+            const int maxActiveBookings = 10;
+
+            // Создаём 10 событий и бронируем их один пользователем
+            var eventIds = new List<Guid>();
+            for (int i = 0; i < maxActiveBookings; i++)
+            {
+                var eventId = Guid.NewGuid();
+                eventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+
+                var booking = await _bookingService.CreateBookingAsync(eventId, userId);
+                Assert.NotNull(booking);
+            }
+
+            // Создаём ещё одно событие для попытки превышения лимита
+            var extraEventId = Guid.NewGuid();
+            CreateTestEvent(extraEventId, 100);
+
+            // Попытка создать 11-ю бронь должна выбросить исключение
+            var exception = await Assert.ThrowsAsync<ActiveBookingsLimitException>(
+                () => _bookingService.CreateBookingAsync(extraEventId, userId));
+            Assert.Equal(EventManagerService.Shared.ErrorCodes.ErrorCodes.ActiveBookingsLimitExceededError, exception.Code);
+            Assert.Equal(maxActiveBookings, exception.CurrentCount);
+        }
+
+        [Fact]
+        public async Task CreateBooking_DifferentUsersIndependentLimits()
+        {
+            var user1 = Guid.NewGuid();
+            var user2 = Guid.NewGuid();
+            const int maxActiveBookings = 10;
+
+            // Создаём 10 событий для первого пользователя
+            var eventIds = new List<Guid>();
+            for (int i = 0; i < maxActiveBookings; i++)
+            {
+                var eventId = Guid.NewGuid();
+                eventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+
+                var booking = await _bookingService.CreateBookingAsync(eventId, user1);
+                Assert.NotNull(booking);
+            }
+
+            // Второй пользователь должен иметь собственный лимит
+            var user2EventIds = new List<Guid>();
+            for (int i = 0; i < 5; i++)
+            {
+                var eventId = Guid.NewGuid();
+                user2EventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+
+                var booking = await _bookingService.CreateBookingAsync(eventId, user2);
+                Assert.NotNull(booking);
+                Assert.Equal(eventId, booking.EventId);
+            }
+
+            // Второй пользователь все ещё может добавить ещё бронирования
+            var anotherEventId = Guid.NewGuid();
+            CreateTestEvent(anotherEventId, 100);
+            var anotherBooking = await _bookingService.CreateBookingAsync(anotherEventId, user2);
+            Assert.NotNull(anotherBooking);
+        }
+
+        [Fact]
+        public async Task CreateBooking_AfterRejectingBooking_DecreasesActiveCount()
+        {
+            var userId = Guid.NewGuid();
+            const int maxActiveBookings = 10;
+
+            // Создаём ровно 10 активных броней
+            var eventIds = new List<Guid>();
+            var bookingIds = new List<Guid>();
+            for (int i = 0; i < maxActiveBookings; i++)
+            {
+                var eventId = Guid.NewGuid();
+                eventIds.Add(eventId);
+                CreateTestEvent(eventId, 100);
+
+                var booking = await _bookingService.CreateBookingAsync(eventId, userId);
+                bookingIds.Add(booking.Id);
+            }
+
+            // Отклоняем одну бронь
+            await _bookingService.RejectBookingAsync(bookingIds[0]);
+
+            // Теперь должны быть 9 активных броней, и новая бронь должна пройти
+            var newEventId = Guid.NewGuid();
+            CreateTestEvent(newEventId, 100);
+
+            var newBooking = await _bookingService.CreateBookingAsync(newEventId, userId);
+            Assert.NotNull(newBooking);
+        }
+
+        #endregion
     }
 }
 
