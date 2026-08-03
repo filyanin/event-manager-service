@@ -29,8 +29,8 @@ namespace EventManagerService.Infrastructure.DataAssets.Configurations
 
             builder.HasOne(b => b.User)
                 .WithMany(u => u.Bookings)
-                .HasForeignKey("UserId")
-                .IsRequired(false)
+                .HasForeignKey(b => b.UserId)
+                .IsRequired(true)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

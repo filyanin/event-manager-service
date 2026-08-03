@@ -10,6 +10,8 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Guid EventId { get; set; }
 
+        public Guid UserId { get; set; }
+
         public BookingStatus Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
@@ -24,7 +26,7 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public DomainBooking ConvertToDomainBooking()
         {
-            return new DomainBooking(Id, EventId, Status, CreatedAt, ProcessedAt);
+            return new DomainBooking(Id, EventId, UserId, Status, CreatedAt, ProcessedAt);
         }
 
     }

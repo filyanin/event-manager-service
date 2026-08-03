@@ -14,5 +14,15 @@ namespace EventManagerService.Application.Interfaces
         public Task ChangeBookingStateAsync(DomainBooking booking);
 
         public Task<List<Guid>> GetPendingIdsAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Получить активные бронирования пользователя (не отменённые и не отклонённые)
+        /// </summary>
+        public Task<int> GetActiveBookingCountAsync(Guid userId);
+
+        /// <summary>
+        /// Проверить, принадлежит ли бронирование пользователю
+        /// </summary>
+        public Task<bool> BookingBelongsToUserAsync(Guid bookingId, Guid userId);
     }
 }

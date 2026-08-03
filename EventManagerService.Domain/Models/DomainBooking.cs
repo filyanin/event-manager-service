@@ -8,6 +8,8 @@ namespace EventManagerService.Domain.Models
 
         public Guid EventId { get; private set; }
 
+        public Guid UserId { get; private set; }
+
         public BookingStatus Status { get; private set; }
 
         public DateTime CreatedAt { get; private set; }
@@ -15,16 +17,17 @@ namespace EventManagerService.Domain.Models
         public DateTime? ProcessedAt { get; private set; }
 
         // Конструктор не приватный, т.к. в нём нет логики
-        public DomainBooking(Guid eventId)
+        public DomainBooking(Guid eventId, Guid userId)
         {
             Id = Guid.NewGuid();
             EventId = eventId;
+            UserId = userId;
             Status = BookingStatus.Pending;
             CreatedAt = DateTime.UtcNow;
             ProcessedAt = null;
         }
 
-        public DomainBooking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
+        public DomainBooking(Guid id, Guid eventId, Guid userId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
         {
             if (processedAt != null && createdAt >= processedAt)
             {
@@ -39,6 +42,7 @@ namespace EventManagerService.Domain.Models
 
             Id = id;
             EventId = eventId;
+            UserId = userId;
             Status = status;
             CreatedAt = createdAt;
             ProcessedAt = processedAt;
@@ -83,6 +87,26 @@ namespace EventManagerService.Domain.Models
 
             Status = BookingStatus.Rejected;
             ProcessedAt = rejectedAt;
+        }
+
+        public void SetBookingCancelled(DateTime cancelledAt)
+        {
+            if (!Status.Equals(BookingStatus.Pending) && !Status.Equals(BookingStatus.Confirmed))
+                throw new Exceptions.GreaterThenValidationException(EventManagerService.Shared.ErrorCodes.ErrorCodes.TryChangeCompletedBookingError);
+
+            if (CreatedAt >= cancelledAt)
+            {
+                var ex = new Exceptions.GreaterThenValidationException(
+                    EventManagerService.Shared.ErrorCodes.ErrorCodes.GreaterThanValidationError,
+                    nameof(cancelledAt),
+                    nameof(CreatedAt),
+                    cancelledAt,
+                    CreatedAt);
+                throw ex;
+            }
+
+            Status = BookingStatus.Cancelled;
+            ProcessedAt = cancelledAt;
         }
 
     }

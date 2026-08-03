@@ -20,7 +20,6 @@ namespace EventManagerService.Application.Services
 
         public async Task<BookingDTO> CreateBookingAsync(Guid eventId, Guid userId, int seatsToReserve = 1)
         {
-
             if (!await _eventRepository.ExistsAsync(eventId))
             {
                 var ex = new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.NotFound);
@@ -28,7 +27,25 @@ namespace EventManagerService.Application.Services
                 ex.Data["firstParamValue"] = eventId;
                 throw ex;
             }
+
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+
+            // Проверка: запретить бронирование события, которое уже началось
+            if (DateTime.UtcNow >= eventEntity.StartAt)
+            {
+                throw new PastEventBookingException(Shared.ErrorCodes.ErrorCodes.PastEventBookingError);
+            }
+
+            // Проверка: ограничить количество активных броней пользователя (максимум 10)
+            const int maxActiveBookings = 10;
+            var activeBookingCount = await _bookingRepository.GetActiveBookingCountAsync(userId);
+            if (activeBookingCount >= maxActiveBookings)
+            {
+                throw new ActiveBookingsLimitException(
+                    Shared.ErrorCodes.ErrorCodes.ActiveBookingsLimitExceededError,
+                    activeBookingCount,
+                    maxActiveBookings);
+            }
 
             eventEntity.TryReserveSeats(seatsToReserve);
 
@@ -66,19 +83,14 @@ namespace EventManagerService.Application.Services
                 throw ex;
             }
 
-            var booking = new DomainBooking(
-                Guid.NewGuid(),
-                eventId,
-                BookingStatus.Pending,
-                DateTime.UtcNow,
-                null);
+            var booking = new DomainBooking(eventId, userId);
 
             try
             {
                 var result = await _bookingRepository.CreateAsync(booking);
 
                 return new BookingDTO()
-                { 
+                {
                     EventId = result.EventId,
                     Id = result.Id,
                     Status = result.Status
@@ -163,9 +175,45 @@ namespace EventManagerService.Application.Services
             await _eventRepository.ReleaseSeatsAsync(@event);
         }
 
-        public Task CancelBookingAsync(Guid bookingId, Guid userId)
+        public async Task CancelBookingAsync(Guid bookingId, Guid userId)
         {
-            throw new NotImplementedException();
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+            if (booking == null)
+            {
+                var ex = new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.NotFound);
+                ex.Data["firstParamName"] = nameof(bookingId);
+                ex.Data["firstParamValue"] = bookingId;
+                throw ex;
+            }
+
+            // Проверка прав: пользователь может отменить только свою бронь
+            bool isAdmin = false; // TODO: реализовать проверку роли администратора
+            if (booking.UserId != userId && !isAdmin)
+            {
+                throw new UnauthorizedBookingCancellationException(
+                    Shared.ErrorCodes.ErrorCodes.UnauthorizedBookingCancellationError,
+                    bookingId,
+                    userId);
+            }
+
+            // Установить статус на Cancelled
+            booking.SetBookingCancelled(DateTime.UtcNow);
+
+            var @event = await _eventRepository.GetByIdAsync(booking.EventId);
+
+            if (@event == null)
+            {
+                var ex = new KeyNotFoundException("ObjectNotFound");
+                ex.Data["firstParamName"] = nameof(booking.EventId);
+                ex.Data["firstParamValue"] = booking.EventId;
+                throw ex;
+            }
+
+            @event.ReleaseSeats(1);
+
+            await _bookingRepository.ChangeBookingStateAsync(booking);
+            await _eventRepository.ReleaseSeatsAsync(@event);
         }
     }
 }

@@ -20,10 +20,12 @@ namespace EventManagerService.Controllers
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<BookingDTO>> CreateBooking(Guid id)
         {
-            var booking = await _bookingService.CreateBookingAsync(id, Guid.NewGuid());
-            throw new NotImplementedException();
+            // TODO: получить userId из контекста пользователя (claims, HttpContext)
+            var userId = Guid.NewGuid(); // временное решение
+            var booking = await _bookingService.CreateBookingAsync(id, userId);
             return AcceptedAtAction(nameof(GetBookingById), new { id = booking.Id }, booking);
         }
 
