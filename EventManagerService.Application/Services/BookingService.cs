@@ -187,8 +187,27 @@ namespace EventManagerService.Application.Services
                 throw ex;
             }
 
-            // Проверка прав: пользователь может отменить только свою бронь или администратор может отменить любую
+            var @event = await _eventRepository.GetByIdAsync(booking.EventId);
+
+            if (@event == null)
+            {
+                var ex = new KeyNotFoundException("ObjectNotFound");
+                ex.Data["firstParamName"] = nameof(booking.EventId);
+                ex.Data["firstParamValue"] = booking.EventId;
+                throw ex;
+            }
+
             bool isAdmin = userRole?.Equals("admin", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            if (@event.StartAt <= DateTime.UtcNow && !isAdmin)
+            {
+                throw new PastEventBookingException(Shared.ErrorCodes.ErrorCodes.PastEventBookingError);
+            }
+
+
+
+            // Проверка прав: пользователь может отменить только свою бронь или администратор может отменить любую
+            
             if (booking.UserId != userId && !isAdmin)
             {
                 throw new UnauthorizedBookingCancellationException(
@@ -199,16 +218,6 @@ namespace EventManagerService.Application.Services
 
             // Установить статус на Cancelled
             booking.SetBookingCancelled(DateTime.UtcNow);
-
-            var @event = await _eventRepository.GetByIdAsync(booking.EventId);
-
-            if (@event == null)
-            {
-                var ex = new KeyNotFoundException("ObjectNotFound");
-                ex.Data["firstParamName"] = nameof(booking.EventId);
-                ex.Data["firstParamValue"] = booking.EventId;
-                throw ex;
-            }
 
             @event.ReleaseSeats(1);
 
