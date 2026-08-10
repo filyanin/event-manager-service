@@ -1,5 +1,6 @@
 using EventManagerService.Infrastructure.DataAssets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using EventManagerService.Infrastructure;
 using EventManagerService.Domain;
@@ -21,7 +22,19 @@ namespace EventService.Tests
             _dbName = Guid.NewGuid().ToString();
             var services = new ServiceCollection();
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
-            services.AddInfrastructure();
+
+            // Создаем конфигурацию для тестов
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "JwtSettings:Secret", "test-secret-key-at-least-32-characters-for-testing" },
+                    { "JwtSettings:Issuer", "TestIssuer" },
+                    { "JwtSettings:Audience", "TestAudience" },
+                    { "JwtSettings:ExpirationMinutes", "60" }
+                })
+                .Build();
+
+            services.AddInfrastructure(configuration);
             services.AddApplication();
             _serviceProvider = services.BuildServiceProvider();
         }

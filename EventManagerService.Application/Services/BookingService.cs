@@ -14,21 +14,38 @@ namespace EventManagerService.Application.Services
 
         public BookingService(IBookingRepository bookingRepository, IEventRepository eventRepository)
         {
-            _bookingRepository = bookingRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(bookingRepository));
-            _eventRepository = eventRepository ?? throw new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(eventRepository));
+            _bookingRepository = bookingRepository ?? throw new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(bookingRepository));
+            _eventRepository = eventRepository ?? throw new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.ValidationFailed, nameof(eventRepository));
         }
 
-        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, int seatsToReserve = 1)
+        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, Guid userId, int seatsToReserve = 1)
         {
-
             if (!await _eventRepository.ExistsAsync(eventId))
             {
-                var ex = new EventManagerService.Shared.Exceptions.AppException(EventManagerService.Shared.ErrorCodes.ErrorCodes.NotFound);
+                var ex = new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.NotFound);
                 ex.Data["firstParamName"] = nameof(eventId);
                 ex.Data["firstParamValue"] = eventId;
                 throw ex;
             }
+
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+
+            // Проверка: запретить бронирование события, которое уже началось
+            if (DateTime.UtcNow >= eventEntity.StartAt)
+            {
+                throw new PastEventBookingException(Shared.ErrorCodes.ErrorCodes.PastEventBookingError);
+            }
+
+            // Проверка: ограничить количество активных броней пользователя (максимум 10)
+            const int maxActiveBookings = 10;
+            var activeBookingCount = await _bookingRepository.GetActiveBookingCountAsync(userId);
+            if (activeBookingCount >= maxActiveBookings)
+            {
+                throw new ActiveBookingsLimitException(
+                    Shared.ErrorCodes.ErrorCodes.ActiveBookingsLimitExceededError,
+                    activeBookingCount,
+                    maxActiveBookings);
+            }
 
             eventEntity.TryReserveSeats(seatsToReserve);
 
@@ -66,19 +83,14 @@ namespace EventManagerService.Application.Services
                 throw ex;
             }
 
-            var booking = new DomainBooking(
-                Guid.NewGuid(),
-                eventId,
-                BookingStatus.Pending,
-                DateTime.UtcNow,
-                null);
+            var booking = new DomainBooking(eventId, userId);
 
             try
             {
                 var result = await _bookingRepository.CreateAsync(booking);
 
                 return new BookingDTO()
-                { 
+                {
                     EventId = result.EventId,
                     Id = result.Id,
                     Status = result.Status
@@ -158,6 +170,56 @@ namespace EventManagerService.Application.Services
 
             @event.ReleaseSeats(1);
 
+
+            await _bookingRepository.ChangeBookingStateAsync(booking);
+            await _eventRepository.ReleaseSeatsAsync(@event);
+        }
+
+        public async Task CancelBookingAsync(Guid bookingId, Guid userId, string userRole = "user")
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+            if (booking == null)
+            {
+                var ex = new Shared.Exceptions.AppException(Shared.ErrorCodes.ErrorCodes.NotFound);
+                ex.Data["firstParamName"] = nameof(bookingId);
+                ex.Data["firstParamValue"] = bookingId;
+                throw ex;
+            }
+
+            var @event = await _eventRepository.GetByIdAsync(booking.EventId);
+
+            if (@event == null)
+            {
+                var ex = new KeyNotFoundException("ObjectNotFound");
+                ex.Data["firstParamName"] = nameof(booking.EventId);
+                ex.Data["firstParamValue"] = booking.EventId;
+                throw ex;
+            }
+
+            bool isAdmin = userRole?.Equals("admin", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            if (@event.StartAt <= DateTime.UtcNow && !isAdmin)
+            {
+                throw new PastEventBookingException(Shared.ErrorCodes.ErrorCodes.PastEventBookingError);
+            }
+
+
+
+            // Проверка прав: пользователь может отменить только свою бронь или администратор может отменить любую
+            
+            if (booking.UserId != userId && !isAdmin)
+            {
+                throw new UnauthorizedBookingCancellationException(
+                    Shared.ErrorCodes.ErrorCodes.UnauthorizedBookingCancellationError,
+                    bookingId,
+                    userId);
+            }
+
+            // Установить статус на Cancelled
+            booking.SetBookingCancelled(DateTime.UtcNow);
+
+            @event.ReleaseSeats(1);
 
             await _bookingRepository.ChangeBookingStateAsync(booking);
             await _eventRepository.ReleaseSeatsAsync(@event);

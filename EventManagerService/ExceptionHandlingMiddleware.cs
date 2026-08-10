@@ -158,6 +158,10 @@ namespace EventManagerService
             FormatException => StatusCodes.Status400BadRequest,
             KeyNotFoundException => StatusCodes.Status404NotFound,
             NoAvailableSeatsException => StatusCodes.Status409Conflict,
+            ActiveBookingsLimitException => StatusCodes.Status409Conflict,
+            PastEventBookingException => StatusCodes.Status400BadRequest,
+            UnauthorizedBookingCancellationException => StatusCodes.Status403Forbidden,
+            UnauthorizedOperationException => StatusCodes.Status403Forbidden,
             UnauthorizedAccessException => StatusCodes.Status403Forbidden,
             HightLoadException => StatusCodes.Status429TooManyRequests,
             _ => StatusCodes.Status500InternalServerError
@@ -170,6 +174,10 @@ namespace EventManagerService
             FormatException => ErrorCodes.ValidationFailed,
             KeyNotFoundException => ErrorCodes.NotFound,
             NoAvailableSeatsException => ErrorCodes.Conflict,
+            ActiveBookingsLimitException => ErrorCodes.Conflict,
+            PastEventBookingException => ErrorCodes.PastEventBookingError,
+            UnauthorizedBookingCancellationException => ErrorCodes.UnauthorizedBookingCancellationError,
+            UnauthorizedOperationException => ErrorCodes.UnauthorizedOperationError,
             UnauthorizedAccessException => ErrorCodes.Forbidden,
             HightLoadException => ErrorCodes.HighLoad,
             _ => ErrorCodes.Unknown

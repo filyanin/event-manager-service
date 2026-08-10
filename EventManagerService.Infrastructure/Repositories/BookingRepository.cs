@@ -28,8 +28,9 @@ namespace EventManagerService.Infrastructure.Repositories
 
             var bookingModel = new Infrastructure.DataAssets.Models.Booking
             {
-                Id =booking.Id,
+                Id = booking.Id,
                 EventId = booking.EventId,
+                UserId = booking.UserId,
                 Status = booking.Status,
                 CreatedAt = booking.CreatedAt,
                 ProcessedAt = booking.ProcessedAt,
@@ -90,6 +91,18 @@ namespace EventManagerService.Infrastructure.Repositories
             model.ProcessedAt = booking.ProcessedAt;
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> GetActiveBookingCountAsync(Guid userId)
+        {
+            return await _context.Bookings.Where(b => b.UserId == userId && 
+                b.Status != BookingStatus.Cancelled && 
+                b.Status != BookingStatus.Rejected).CountAsync();
+        }
+
+        public async Task<bool> BookingBelongsToUserAsync(Guid bookingId, Guid userId)
+        {
+            return await _context.Bookings.AnyAsync(b => b.Id == bookingId && b.UserId == userId);
         }
     }
 }

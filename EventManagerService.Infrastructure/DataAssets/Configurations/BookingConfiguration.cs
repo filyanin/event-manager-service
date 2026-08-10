@@ -20,9 +20,18 @@ namespace EventManagerService.Infrastructure.DataAssets.Configurations
             builder.Property(b => b.CreatedAt)
                 .IsRequired();
 
+            builder.Property(b => b.ProcessedAt)
+                .IsRequired(false);
+
             builder.HasOne(b => b.Event)
                 .WithMany(e => e.Bookings)
                 .HasForeignKey(b => b.EventId);
+
+            builder.HasOne(b => b.User)
+                .WithMany(u => u.Bookings)
+                .HasForeignKey(b => b.UserId)
+                .IsRequired(true)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

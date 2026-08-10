@@ -59,11 +59,14 @@ namespace EventService.IntegrationTests
             using var context = CreateContext();
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
+            var userRepo = new EventManagerService.Infrastructure.Repositories.UserRepository(context);
+
+            var user = await userRepo.CreateAsync("testuser", "11111");
 
             var ev = DomainEvent.Create(Guid.NewGuid(), "BookingEvent", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5, 5);
             var added = await eventRepo.AddAsync(ev);
 
-            var bookingToCreate = new DomainBooking(added.Id);
+            var bookingToCreate = new DomainBooking(added.Id, user.Id);
             var booking = await bookingRepo.CreateAsync(bookingToCreate);
             Assert.Equal(BookingStatus.Pending, booking.Status);
 
@@ -76,7 +79,7 @@ namespace EventService.IntegrationTests
             Assert.Equal(BookingStatus.Confirmed, byId.Status);
 
             
-            var booking2ToCreate = new DomainBooking(added.Id);
+            var booking2ToCreate = new DomainBooking(added.Id, user.Id);
             var booking2 = await bookingRepo.CreateAsync(booking2ToCreate);
             booking2.SetBookingRejected(DateTime.UtcNow.AddMinutes(2));
             await bookingRepo.ChangeBookingStateAsync(booking2);
@@ -91,11 +94,14 @@ namespace EventService.IntegrationTests
             using var context = CreateContext();
             var eventRepo = new EventManagerService.Infrastructure.Repositories.EventRepository(context);
             var bookingRepo = new EventManagerService.Infrastructure.Repositories.BookingRepository(context);
+            var userRepo = new EventManagerService.Infrastructure.Repositories.UserRepository(context);
+
+            var user = await userRepo.CreateAsync("testuser", "11111");
 
             var ev = DomainEvent.Create(Guid.NewGuid(), "BookingEvent2", DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5, 5);
             var added = await eventRepo.AddAsync(ev);
 
-            var bookingToCreate = new DomainBooking(added.Id);
+            var bookingToCreate = new DomainBooking(added.Id, user.Id);
             var booking = await bookingRepo.CreateAsync(bookingToCreate);
             var pendingIds = await bookingRepo.GetPendingIdsAsync(default);
             Assert.Contains(booking.Id, pendingIds);

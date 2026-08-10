@@ -1,5 +1,6 @@
 ﻿using EventManagerService.Domain.Enum;
 using EventManagerService.Domain.Models;
+using EventManagerService.Infrastructure.DataAssets.Users;
 
 namespace EventManagerService.Infrastructure.DataAssets.Models
 {
@@ -9,6 +10,8 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Guid EventId { get; set; }
 
+        public Guid UserId { get; set; }
+
         public BookingStatus Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
@@ -17,11 +20,13 @@ namespace EventManagerService.Infrastructure.DataAssets.Models
 
         public Event Event { get; set; }
 
+        public User User { get; set; }
+
         public Booking() { }
 
         public DomainBooking ConvertToDomainBooking()
         {
-            return new DomainBooking(Id, EventId, Status, CreatedAt, ProcessedAt);
+            return new DomainBooking(Id, EventId, UserId, Status, CreatedAt, ProcessedAt);
         }
 
     }

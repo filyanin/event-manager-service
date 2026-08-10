@@ -1,5 +1,6 @@
 ﻿using EventManagerService.Application.DTOs;
 using EventManagerService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -19,7 +20,7 @@ namespace EventManagerService.Controllers
         [HttpGet]
         [Route("events")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        
+
         public async Task<ActionResult<PaginatedResult>> GetAllEvents(string? title = null, DateTime? from = null, DateTime? to = null, [Range(1,int.MaxValue)]int page = 1, [Range(10,100)]int pageSize = 10)
         {
             var list = await _eventService.GetAllEventAsync(new Domain.Filters.EventsFilters(title, from, to), page, pageSize);
@@ -46,10 +47,13 @@ namespace EventManagerService.Controllers
                 var _event = await _eventService.GetEventByIdAsync(id);
                 return Ok(_event);
         }
-        
+
         [HttpPost]
         [Route("events")]
+        [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<OutputEventDTO>> CreateEvent(InputEventDTO newEvent)
         {
             var _event = await _eventService.AddEventAsync(newEvent);
@@ -58,8 +62,11 @@ namespace EventManagerService.Controllers
 
         [HttpPut]
         [Route("events/{id:guid}")]
+        [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateEvent(Guid id, InputEventDTO changedEvent)
         {
             await _eventService.UpdateEventAsync(id, changedEvent);
@@ -68,8 +75,11 @@ namespace EventManagerService.Controllers
 
         [HttpDelete]
         [Route("events/{id:guid}")]
+        [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteEvent(Guid id) 
         {
             await _eventService.DeleteEventAsync(id);

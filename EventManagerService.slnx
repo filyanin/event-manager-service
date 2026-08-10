@@ -8,7 +8,7 @@
   <Project Path="EventManagerService.Shared/EventManagerService.Shared.csproj" />
   <Project Path="EventManagerService/EventManagerService.csproj" />
   <Project Path="EventService.IntegrationTests/EventService.IntegrationTests.csproj">
-    <Build Solution="Debug|*" Project="false" />
+    <Build Solution="Debug|*" Project="" />
   </Project>
   <Project Path="EventService.Tests/EventService.Tests.csproj" Id="64e2301e-6e4a-47f4-b890-d2be853c978d" />
 </Solution>
