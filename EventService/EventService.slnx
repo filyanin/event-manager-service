@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="EventService.Application/EventService.Application.csproj" />
+  <Project Path="EventService.Domain/EventService.Domain.csproj" />
+  <Project Path="EventService.Infrastructure/EventService.Infrastructure.csproj" />
+  <Project Path="EventService.Presentation/EventService.Presentation.csproj" />
+</Solution>
