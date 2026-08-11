@@ -6,7 +6,7 @@ namespace EventService.Infrastructure.DataAssets.Models
     {
         public Guid Id { get; set; }
 
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         public string? Description { get; set; }
 
@@ -18,11 +18,16 @@ namespace EventService.Infrastructure.DataAssets.Models
         public int TotalSeats { get; set; }
         public int AvailableSeats { get; set; }
 
+        public Guid CreatedByUserId { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
         public Event() { }
 
         public DomainEvent ConvertToDomainEvent()
         {
-            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, AvailableSeats, Description);
+            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, CreatedByUserId, Description);
 
             return domainEvent;
         }

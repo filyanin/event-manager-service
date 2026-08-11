@@ -6,134 +6,142 @@ using EventService.Infrastructure.DataAssets.Models;
 using EventService.Domain.ValueObjects;
 using EventService.Application.Interfaces;
 
-namespace EventService.Infrastructure.Repositories
+namespace EventService.Infrastructure.Repositories;
+
+public class EventRepository : IEventRepository
 {
-    public class EventRepository : IEventRepository
+    private readonly AppDbContext _context;
+
+    public EventRepository(AppDbContext context) => _context = context;
+
+    public async Task<DomainEvent> AddAsync(DomainEvent ev)
     {
-        private readonly AppDbContext _context;
-
-        public EventRepository(AppDbContext context) => _context = context;
-
-        public async Task<DomainEvent> AddAsync(DomainEvent ev)
+        var model = new Event
         {
-            var model = new Event
-            {
-                Id = ev.Id,
-                Title = ev.Title,
-                StartAt = ev.StartAt,
-                EndAt = ev.EndAt,
-                TotalSeats = ev.TotalSeats,
-                AvailableSeats = ev.AvailableSeats,
-                Description = ev.Description
-            };
+            Id = ev.Id,
+            Title = ev.Title,
+            StartAt = ev.StartAt,
+            EndAt = ev.EndAt,
+            TotalSeats = ev.TotalSeats,
+            AvailableSeats = ev.AvailableSeats,
+            CreatedByUserId = ev.CreatedByUserId,
+            CreatedAt = DateTime.UtcNow,
+            Description = ev.Description
+        };
 
-            await _context.Events.AddAsync(model);
-            await _context.SaveChangesAsync();
+        await _context.Events.AddAsync(model);
+        await _context.SaveChangesAsync();
 
-            return model.ConvertToDomainEvent();
+        return model.ConvertToDomainEvent();
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {id} not found");
+
+        _context.Events.Remove(model);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> ExistsAsync(Guid id) => await _context.Events.AnyAsync(e => e.Id == id);
+
+    public async Task<(IList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations)
+    {
+        IQueryable<Event> dbQuery = _context.Events;
+
+        if (!string.IsNullOrEmpty(filters.Title))
+        {
+            var title = filters.Title.ToLower();
+            dbQuery = dbQuery.Where(e => e.Title.ToLower().Contains(title));
+        }
+        if (filters.From != null)
+        {
+            dbQuery = dbQuery.Where(e => e.StartAt >= filters.From.Value);
+        }
+        if (filters.To != null)
+        {
+            dbQuery = dbQuery.Where(e => e.EndAt <= filters.To.Value);
         }
 
-        public async Task DeleteAsync(Guid id)
+        var total = await dbQuery.CountAsync();
+        var items = await dbQuery
+            .OrderBy(e => e.StartAt)
+            .Skip((paginations.pageNumber - 1) * paginations.pageSize)
+            .Take(paginations.pageSize)
+            .ToListAsync();
+        var domainItems = items.Select(i => i.ConvertToDomainEvent()).ToList();
+        return (domainItems, total);
+    }
+
+    public async Task<DomainEvent> GetByIdAsync(Guid id)
+    {
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {id} not found");
+
+        return model.ConvertToDomainEvent();
+    }
+
+    public async Task UpdateAsync(DomainEvent domainEvent)
+    {
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == domainEvent.Id);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {domainEvent.Id} not found");
+
+        model.Title = domainEvent.Title;
+        model.Description = domainEvent.Description;
+        model.StartAt = domainEvent.StartAt;
+        model.EndAt = domainEvent.EndAt;
+        model.UpdatedAt = DateTime.UtcNow;
+
+        _context.Events.Update(model);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> TryReserveSeatsAsync(DomainEvent @event)
+    {
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
+
+        if (model == null)
+            throw new KeyNotFoundException($"Event {@event.Id} not found");
+
+        model.Timestamp = @event.Timestamp;
+        model.AvailableSeats = @event.AvailableSeats;
+        model.UpdatedAt = DateTime.UtcNow;
+        try
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-            if (model == null)
-                throw new KeyNotFoundException($"Event {id} not found");
-
-            _context.Events.Remove(model);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<bool> ExistsAsync(Guid id) => await _context.Events.AnyAsync(e => e.Id == id);
-
-        public async Task<(IList<DomainEvent> Items, int Total)> GetAllAsync(EventsFilters filters, Paginations paginations)
-        {
-            IQueryable<Event> dbQuery = _context.Events;
-
-            if (!string.IsNullOrEmpty(filters.Title))
-            {
-                var title = filters.Title.ToLower();
-                dbQuery = dbQuery.Where(e => e.Title.ToLower().Contains(title));
-            }
-            if (filters.From != null)
-            {
-                dbQuery = dbQuery.Where(e => e.StartAt >= filters.From.Value);
-            }
-            if (filters.To != null)
-            {
-                dbQuery = dbQuery.Where(e => e.EndAt <= filters.To.Value);
-            }
-
-            var total = await dbQuery.CountAsync();
-            var items = await dbQuery.Skip((paginations.pageNumber - 1) * paginations.pageSize).Take(paginations.pageSize).ToListAsync();
-            var domainItems = items.Select(i => i.ConvertToDomainEvent()).ToList();
-            return (domainItems, total);
-        }
-
-        public async Task<DomainEvent> GetByIdAsync(Guid id)
-        {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-            if (model == null)
-                throw new KeyNotFoundException($"Event {id} not found");
-
-            return model.ConvertToDomainEvent();
-        }
-
-        public async Task UpdateAsync(DomainEvent domainEvent)
-        {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == domainEvent.Id);
-            if (model == null)
-                throw new KeyNotFoundException($"Event {domainEvent.Id} not found");
-
-            model.Title = domainEvent.Title;
-            model.Description = domainEvent.Description;
-            model.StartAt = domainEvent.StartAt;
-            model.EndAt = domainEvent.EndAt;
-
             _context.Events.Update(model);
             await _context.SaveChangesAsync();
         }
-
-        public async Task<bool> TryReserveSeatsAsync(DomainEvent @event)
+        catch (DbUpdateConcurrencyException)
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
-
-            if (model == null)
-                throw new KeyNotFoundException($"Event {@event.Id} not found");
-
-            model.Timestamp = @event.Timestamp;
-            model.AvailableSeats = @event.AvailableSeats;
-            try
-            {
-                _context.Events.Update(model);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw new InvalidOperationException("SeatsReserveConcurrencyException");
-            }
-
-            return true;
+            throw new InvalidOperationException("SeatsReserveConcurrencyException");
         }
 
-        public async Task<bool> ReleaseSeatsAsync(DomainEvent @event)
+        return true;
+    }
+
+    public async Task<bool> ReleaseSeatsAsync(DomainEvent @event)
+    {
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {@event.Id} not found");
+
+        model.AvailableSeats = @event.AvailableSeats;
+        model.UpdatedAt = DateTime.UtcNow;
+
+        try
         {
-            var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
-            if (model == null)
-                throw new KeyNotFoundException($"Event {@event.Id} not found");
-
-            model.AvailableSeats = @event.AvailableSeats;
-
-            try
-            {
-                _context.Events.Update(model);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw new InvalidOperationException("HighLoad");
-            }
-
-            return true;
+            _context.Events.Update(model);
+            await _context.SaveChangesAsync();
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException("HighLoad");
+        }
+
+        return true;
     }
 }

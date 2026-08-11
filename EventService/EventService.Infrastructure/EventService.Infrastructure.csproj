@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventService.Application\EventService.Application.csproj" />
     <ProjectReference Include="..\EventService.Domain\EventService.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Contracts\Shared.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Entity Framework Core and Npgsql provider -->
@@ -20,9 +21,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.10" />
     <!-- Data annotations (optional explicit reference) -->
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Persistence\" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

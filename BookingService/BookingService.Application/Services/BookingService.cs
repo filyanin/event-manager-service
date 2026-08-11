@@ -3,92 +3,111 @@ using BookingService.Application.Interfaces;
 using BookingService.Domain.Enum;
 using BookingService.Domain.Models;
 
-namespace BookingService.Application.Services
+namespace BookingService.Application.Services;
+
+public class BookingService : IBookingService
 {
-    public class BookingService : IBookingService
+    private readonly IBookingRepository _bookingRepository;
+    private const int MaxActiveBookings = 10;
+
+    public BookingService(IBookingRepository bookingRepository)
     {
-        private readonly IBookingRepository _bookingRepository;
+        _bookingRepository = bookingRepository ?? throw new ArgumentNullException(nameof(bookingRepository));
+    }
 
-        public BookingService(IBookingRepository bookingRepository)
+    public async Task<BookingDTO> CreateBookingAsync(Guid eventGuid, Guid userGuid, int seatsToBook = 1)
+    {
+        if (seatsToBook <= 0)
+            throw new ArgumentException("SeatsToBook must be greater than 0", nameof(seatsToBook));
+
+        // Проверяем количество активных бронирований пользователя
+        var activeBookingsCount = await _bookingRepository.GetActiveBookingCountAsync(userGuid);
+        if (activeBookingsCount >= MaxActiveBookings)
+            throw new InvalidOperationException($"User has reached maximum active bookings limit ({MaxActiveBookings})");
+
+        var booking = new DomainBooking(eventGuid, userGuid, seatsToBook);
+
+        var result = await _bookingRepository.CreateAsync(booking);
+
+        return MapToDTO(result);
+    }
+
+    public async Task<BookingDTO> GetBookingByIdAsync(Guid bookingId)
+    {
+        var result = await _bookingRepository.GetByIdAsync(bookingId);
+        return MapToDTO(result);
+    }
+
+    public async Task<List<BookingDTO>> GetBookingsByEventAsync(Guid eventGuid)
+    {
+        var results = await _bookingRepository.GetByEventGuidAsync(eventGuid);
+        return results.Select(MapToDTO).ToList();
+    }
+
+    public async Task<List<BookingDTO>> GetBookingsByUserAsync(Guid userGuid)
+    {
+        var results = await _bookingRepository.GetByUserGuidAsync(userGuid);
+        return results.Select(MapToDTO).ToList();
+    }
+
+    public async Task<List<BookingDTO>> GetBookingByStatusAsync(BookingStatus status)
+    {
+        var results = await _bookingRepository.GetByStatusAsync(status);
+        return results.Select(MapToDTO).ToList();
+    }
+
+    public async Task ConfirmBookingAsync(Guid bookingId)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null)
+            throw new KeyNotFoundException("Booking not found");
+
+        booking.SetBookingConfirmed(DateTime.UtcNow);
+        await _bookingRepository.ChangeBookingStateAsync(booking);
+    }
+
+    public async Task RejectBookingAsync(Guid bookingId)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null)
+            throw new KeyNotFoundException("Booking not found");
+
+        booking.SetBookingRejected(DateTime.UtcNow);
+        await _bookingRepository.ChangeBookingStateAsync(booking);
+    }
+
+    public async Task CancelBookingAsync(Guid bookingId, Guid userGuid)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null)
+            throw new KeyNotFoundException("Booking not found");
+
+        if (booking.UserGuid != userGuid)
+            throw new UnauthorizedAccessException("User is not authorized to cancel this booking");
+
+        booking.SetBookingCancelled(DateTime.UtcNow);
+        await _bookingRepository.ChangeBookingStateAsync(booking);
+    }
+
+    public async Task<int> GetActiveBookingsCountAsync(Guid userGuid)
+    {
+        return await _bookingRepository.GetActiveBookingCountAsync(userGuid);
+    }
+
+    private static BookingDTO MapToDTO(DomainBooking booking)
+    {
+        return new BookingDTO
         {
-            _bookingRepository = bookingRepository ?? throw new ArgumentNullException(nameof(bookingRepository));
-        }
-
-        public async Task<BookingDTO> CreateBookingAsync(Guid eventId, Guid userId, int seatsToReserve = 1)
-        {
-            // В BookingService нет прямой проверки события — сохраняем только EventId
-            var booking = new DomainBooking(eventId, userId);
-
-            var result = await _bookingRepository.CreateAsync(booking);
-
-            return new BookingDTO()
-            {
-                EventId = result.EventId,
-                Id = result.Id,
-                Status = result.Status
-            };
-        }
-
-        public async Task<BookingDTO> GetBookingByIdAsync(Guid bookingId)
-        {
-            var result = await _bookingRepository.GetByIdAsync(bookingId);
-            return new BookingDTO()
-            {
-                EventId = result.EventId,
-                Id = result.Id,
-                Status = result.Status
-            };
-        }
-
-        public async Task<List<BookingDTO>> GetBookingByStateAsync(BookingStatus state)
-        {
-            var results = await _bookingRepository.GetByStateAsync(state);
-            return results.Select(r => new BookingDTO()
-            {
-                EventId = r.EventId,
-                Id = r.Id,
-                Status = r.Status
-            }).ToList();
-        }
-
-        public async Task ConfirmBookingAsync(Guid bookingId)
-        {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
-
-            if (booking == null)
-                throw new KeyNotFoundException("Booking not found");
-
-            booking.SetBookingConfirmed(DateTime.UtcNow);
-            await _bookingRepository.ChangeBookingStateAsync(booking);
-        }
-
-        public async Task RejectBookingAsync(Guid bookingId)
-        {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
-
-            if (booking == null)
-                throw new KeyNotFoundException("Booking not found");
-
-            booking.SetBookingRejected(DateTime.UtcNow);
-            await _bookingRepository.ChangeBookingStateAsync(booking);
-        }
-
-        public async Task CancelBookingAsync(Guid bookingId, Guid userId, string userRole = "user")
-        {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
-
-            if (booking == null)
-                throw new KeyNotFoundException("Booking not found");
-
-            bool isAdmin = userRole?.Equals("admin", StringComparison.OrdinalIgnoreCase) ?? false;
-
-            if (booking.UserId != userId && !isAdmin)
-            {
-                throw new UnauthorizedAccessException("User is not authorized to cancel this booking");
-            }
-
-            booking.SetBookingCancelled(DateTime.UtcNow);
-            await _bookingRepository.ChangeBookingStateAsync(booking);
-        }
+            Id = booking.Id,
+            EventGuid = booking.EventGuid,
+            UserGuid = booking.UserGuid,
+            SeatsBooked = booking.SeatsBooked,
+            Status = booking.Status,
+            CreatedAt = booking.CreatedAt,
+            ProcessedAt = booking.ProcessedAt
+        };
     }
 }

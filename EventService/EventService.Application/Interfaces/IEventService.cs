@@ -1,6 +1,5 @@
 using EventService.Application.DTOs;
 using EventService.Domain.Filters;
-using EventService.Domain.Enum;
 
 namespace EventService.Application.Interfaces
 {
@@ -10,10 +9,13 @@ namespace EventService.Application.Interfaces
 
         public Task<OutputEventDTO> GetEventByIdAsync(Guid id);
 
-        public Task<OutputEventDTO> AddEventAsync(InputEventDTO eventDto);
+        public Task<OutputEventDTO> AddEventAsync(InputEventDTO eventDto, Guid userId);
 
         public Task UpdateEventAsync(Guid id, InputEventDTO eventDTO);
 
         public Task<bool> ExistsAsync(Guid id);
+
+        public Task DeleteEventAsync(Guid id);
     }
 }
+

@@ -19,9 +19,16 @@ namespace EventService.Infrastructure.DataAssets.Configurations
             builder.Property(e => e.EndAt).IsRequired();
             builder.Property(e => e.TotalSeats).IsRequired();
             builder.Property(e => e.AvailableSeats).IsRequired();
+            builder.Property(e => e.CreatedByUserId).IsRequired();
+            builder.Property(e => e.CreatedAt).IsRequired();
+            builder.Property(e => e.UpdatedAt);
             builder.Property(e => e.Timestamp).IsRowVersion();
 
-            // Уменьшенная связность: не настраиваем навигационные связи к Booking
+            // Индекс для быстрого поиска событий по CreatedByUserId
+            builder.HasIndex(e => e.CreatedByUserId);
+
+            // Индекс для быстрого поиска событий по дате
+            builder.HasIndex(e => e.StartAt);
         }
     }
 }

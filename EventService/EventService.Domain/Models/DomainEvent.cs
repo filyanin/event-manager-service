@@ -16,9 +16,11 @@ namespace EventService.Domain.Models
         public int TotalSeats { get; private set; }
         public int AvailableSeats { get; private set; }
 
+        public Guid CreatedByUserId { get; private set; }
+
         public byte[]? Timestamp { get; private set; }
 
-        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null, byte[]? timestamp = null)
+        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null)
         {
             Id = id;
             Title = title;
@@ -27,10 +29,11 @@ namespace EventService.Domain.Models
             EndAt = endAt;
             TotalSeats = totalSeats;
             AvailableSeats = availableSeats;
+            CreatedByUserId = createdByUserId;
             Timestamp = timestamp;
         }
 
-        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, string? description = null, byte[]? timestamp = null)
+        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Title is required", nameof(title));
@@ -44,7 +47,10 @@ namespace EventService.Domain.Models
             if (totalSeats < 0)
                 throw new ArgumentException("TotalSeats must be non-negative", nameof(totalSeats));
 
-            return new DomainEvent(id, title, startAt, endAt, totalSeats, availableSeats, description, timestamp);
+            if (createdByUserId == Guid.Empty)
+                throw new ArgumentException("CreatedByUserId cannot be empty", nameof(createdByUserId));
+
+            return new DomainEvent(id, title, startAt, endAt, totalSeats, totalSeats, createdByUserId, description, timestamp);
         }
 
         public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string? description = null)
