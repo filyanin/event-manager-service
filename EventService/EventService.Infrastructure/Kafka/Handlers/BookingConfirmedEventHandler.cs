@@ -31,7 +31,7 @@ public class BookingConfirmedEventHandler
             // Уменьшаем доступные места
             if (domainEvent.AvailableSeats >= @event.SeatsBooked)
             {
-                domainEvent.ReserveSeats(@event.SeatsBooked);
+                domainEvent.TryReserveSeats(@event.SeatsBooked);
                 await _eventRepository.UpdateAsync(domainEvent);
                 _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
             }

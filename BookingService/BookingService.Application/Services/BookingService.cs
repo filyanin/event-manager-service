@@ -2,10 +2,10 @@ using BookingService.Application.DTOs;
 using BookingService.Application.Interfaces;
 using BookingService.Domain.Enum;
 using BookingService.Domain.Models;
+using Microsoft.Extensions.Logging;
 using Shared.Contracts.Events.Booking;
 using Shared.Contracts.Topics;
-using BookingService.Infrastructure.Kafka;
-using Microsoft.Extensions.Logging;
+
 
 namespace BookingService.Application.Services;
 

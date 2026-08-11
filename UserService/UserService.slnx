@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../Shared/Shared.Contracts/Shared.Contracts.csproj" />
   <Project Path="UserService.Application/UserService.Application.csproj" />
   <Project Path="UserService.Domain/UserService.Domain.csproj" />
   <Project Path="UserService.Infrastructure/UserService.Infrastructure.csproj" />

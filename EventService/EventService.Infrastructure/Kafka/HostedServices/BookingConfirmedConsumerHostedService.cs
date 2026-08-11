@@ -4,6 +4,7 @@ using Shared.Contracts.Events.Booking;
 using Shared.Contracts.Topics;
 using EventService.Infrastructure.Kafka;
 using EventService.Infrastructure.Kafka.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventService.Infrastructure.Kafka.HostedServices;
 

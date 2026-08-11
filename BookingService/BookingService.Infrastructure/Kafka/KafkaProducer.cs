@@ -1,3 +1,4 @@
+using BookingService.Application.Interfaces;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -5,11 +6,6 @@ using Shared.Contracts.Configuration;
 using System.Text.Json;
 
 namespace BookingService.Infrastructure.Kafka;
-
-public interface IKafkaProducer
-{
-    Task PublishAsync<T>(string topic, string key, T message);
-}
 
 public class KafkaProducer : IKafkaProducer
 {
@@ -24,7 +20,6 @@ public class KafkaProducer : IKafkaProducer
         {
             BootstrapServers = kafkaSettings.BootstrapServers,
             Acks = Acks.All,
-            Retries = 3,
             MessageSendMaxRetries = 3,
             RequestTimeoutMs = 30000,
             LingerMs = 10
