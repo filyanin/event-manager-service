@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,6 +16,8 @@ namespace UserService.Infrastructure.Security;
 /// </summary>
 public class TokenService : ITokenService
 {
+    private const int MinimumSecretBytes = 32; // 256 бит — минимум для HMAC-SHA256
+
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<TokenService> _logger;
 
@@ -22,6 +25,13 @@ public class TokenService : ITokenService
     {
         _jwtSettings = jwtSettings.Value;
         _logger = logger;
+
+        if (string.IsNullOrWhiteSpace(_jwtSettings.Secret) ||
+            Encoding.UTF8.GetByteCount(_jwtSettings.Secret) < MinimumSecretBytes)
+        {
+            throw new InvalidOperationException(
+                $"JWT secret must be at least {MinimumSecretBytes} bytes (256 bits) long");
+        }
     }
 
     /// <summary>
@@ -35,11 +45,14 @@ public class TokenService : ITokenService
     {
         try
         {
+            var now = DateTime.UtcNow;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Name, login),
-                new Claim(ClaimTypes.Role, role ?? "User")
+                new Claim(ClaimTypes.Role, role ?? "User"),
+                new Claim(JwtRegisteredClaimNames.Jti, GenerateJti())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -49,21 +62,24 @@ public class TokenService : ITokenService
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
+                notBefore: now,
+                expires: now.AddMinutes(_jwtSettings.ExpirationMinutes),
                 signingCredentials: credentials
             );
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwt = tokenHandler.WriteToken(token);
 
-            _logger.LogInformation($"JWT-токен успешно сгенерирован для пользователя {login}");
+            _logger.LogInformation("JWT-токен успешно сгенерирован для пользователя {Login}", login);
 
             return jwt;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Ошибка при генерации JWT-токена: {ex.Message}");
+            _logger.LogError(ex, "Ошибка при генерации JWT-токена для пользователя {Login}", login);
             throw;
         }
     }
+
+    private static string GenerateJti() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
 }

@@ -3,10 +3,10 @@ namespace UserService.Application.Interfaces;
 public interface IPasswordHasher
 {
     /// <summary>
-    /// Хеширует пароль с использованием SHA-256
+    /// Хеширует пароль с использованием PBKDF2 (соль + большое число итераций)
     /// </summary>
     /// <param name="password">Пароль для хеширования</param>
-    /// <returns>Хеш пароля в формате Base64</returns>
+    /// <returns>Строка вида {итерации}.{соль}.{хеш} в формате Base64</returns>
     string HashPassword(string password);
 
     /// <summary>

@@ -15,8 +15,12 @@ builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddApplication();
 
 // Configure JWT
-var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() 
-    ?? new JwtSettings { Secret = "your-secret-key-here", Issuer = "UserService", Audience = "UserServiceClient" };
+var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>();
+if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.Secret))
+{
+    throw new InvalidOperationException(
+        $"JWT settings are not configured. Provide a strong secret (>= 32 bytes) under configuration section '{JwtSettings.SectionName}:Secret'.");
+}
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

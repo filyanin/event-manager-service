@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using UserService.Domain.Entities;
 
 namespace UserService.Application.Interfaces
 {
@@ -8,20 +9,18 @@ namespace UserService.Application.Interfaces
     /// </summary>
     public interface IUserRepository
     {
-        Task<UserData?> GetByLoginAsync(string login);
+        Task<User?> GetByLoginAsync(string login);
 
-        Task<UserData> CreateAsync(string login, string passwordHash, string roleName = "user");
+        Task<User?> GetByIdAsync(Guid id);
+
+        Task<User> CreateAsync(string login, string passwordHash, string roleName = "user");
+
+        Task DeleteAsync(Guid id);
 
         Task<bool> ExistsByLoginAsync(string login);
 
-        Task<bool> RoleExistsAsync(string roleName);
-    }
+        Task<bool> ExistsByIdAsync(Guid id);
 
-    public class UserData
-    {
-        public Guid Id { get; set; }
-        public string Login { get; set; }
-        public string PasswordHash { get; set; }
-        public string RoleName { get; set; }
+        Task<bool> RoleExistsAsync(string roleName);
     }
 }

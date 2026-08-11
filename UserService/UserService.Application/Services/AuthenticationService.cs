@@ -62,14 +62,15 @@ public class AuthenticationService : IAuthenticationService
         var user = await _userRepository.CreateAsync(request.Login, passwordHash, roleName);
 
         // Генерируем токен
-        var token = _tokenService.GenerateToken(user.Id, user.Login, user.RoleName);
+        var userRoleName = user.Role?.Name ?? roleName;
+        var token = _tokenService.GenerateToken(user.Id, user.Login, userRoleName);
 
         return new AuthenticationResponse
         {
             UserId = user.Id,
             Login = user.Login,
             Token = token,
-            Role = user.RoleName
+            Role = userRoleName
         };
     }
 
@@ -106,14 +107,15 @@ public class AuthenticationService : IAuthenticationService
         }
 
         // Генерируем токен
-        var token = _tokenService.GenerateToken(user.Id, user.Login, user.RoleName);
+        var userRoleName = user.Role?.Name ?? "user";
+        var token = _tokenService.GenerateToken(user.Id, user.Login, userRoleName);
 
         return new AuthenticationResponse
         {
             UserId = user.Id,
             Login = user.Login,
             Token = token,
-            Role = user.RoleName
+            Role = userRoleName
         };
     }
 }

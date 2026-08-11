@@ -16,8 +16,12 @@ namespace UserService.Infrastructure.DataAssets.Configurations
 
             builder.Property(u => u.PasswordHash).IsRequired();
 
-            // Храним только RoleId как Guid, без навигационной связи
             builder.Property(u => u.RoleId).IsRequired();
+
+            builder.HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

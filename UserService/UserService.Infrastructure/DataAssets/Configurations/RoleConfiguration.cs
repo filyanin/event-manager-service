@@ -14,7 +14,6 @@ namespace UserService.Infrastructure.DataAssets.Configurations
             builder.Property(r => r.Name).IsRequired().HasMaxLength(100);
             builder.Property(r => r.IsAdmin).IsRequired();
 
-            // Не устанавливаем обратную навигацию Users — уменьшение связности
         }
     }
 }
