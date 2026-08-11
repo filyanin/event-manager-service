@@ -129,6 +129,10 @@ public class EventsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return NotFound(new { message = ex.Message });
@@ -151,6 +155,10 @@ public class EventsController : ControllerBase
         {
             await _eventService.DeleteEventAsync(id);
             return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {

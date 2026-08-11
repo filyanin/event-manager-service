@@ -18,9 +18,13 @@ namespace EventService.Domain.Models
 
         public Guid CreatedByUserId { get; private set; }
 
+        public DateTime CreatedAt { get; private set; }
+
+        public DateTime? UpdatedAt { get; private set; }
+
         public byte[]? Timestamp { get; private set; }
 
-        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null)
+        private DomainEvent(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, Guid createdByUserId, DateTime createdAt, DateTime? updatedAt = null, string? description = null, byte[]? timestamp = null)
         {
             Id = id;
             Title = title;
@@ -30,10 +34,12 @@ namespace EventService.Domain.Models
             TotalSeats = totalSeats;
             AvailableSeats = availableSeats;
             CreatedByUserId = createdByUserId;
+            CreatedAt = createdAt;
+            UpdatedAt = updatedAt;
             Timestamp = timestamp;
         }
 
-        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null)
+        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null, DateTime? createdAt = null, DateTime? updatedAt = null)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Title is required", nameof(title));
@@ -50,7 +56,7 @@ namespace EventService.Domain.Models
             if (createdByUserId == Guid.Empty)
                 throw new ArgumentException("CreatedByUserId cannot be empty", nameof(createdByUserId));
 
-            return new DomainEvent(id, title, startAt, endAt, totalSeats, totalSeats, createdByUserId, description, timestamp);
+            return new DomainEvent(id, title, startAt, endAt, totalSeats, totalSeats, createdByUserId, createdAt ?? DateTime.UtcNow, updatedAt, description, timestamp);
         }
 
         public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string? description = null)
@@ -68,6 +74,7 @@ namespace EventService.Domain.Models
             Description = description;
             StartAt = startAt;
             EndAt = endAt;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public bool TryReserveSeats(int seatsToReserve = 1)

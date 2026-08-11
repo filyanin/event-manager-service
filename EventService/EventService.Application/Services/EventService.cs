@@ -19,7 +19,7 @@ public class EventService : IEventService
     {
         var paginations = new Paginations(pageSize, page);
         var result = await _eventRepository.GetAllAsync(filters, paginations);
-        var items = result.Items.Select(e => new OutputEventDTO(e, DateTime.UtcNow)).ToList();
+        var items = result.Items.Select(e => new OutputEventDTO(e)).ToList();
         return (items, result.Total);
     }
 
@@ -45,13 +45,13 @@ public class EventService : IEventService
         );
 
         var createdEvent = await _eventRepository.AddAsync(ev);
-        return new OutputEventDTO(createdEvent, DateTime.UtcNow);
+        return new OutputEventDTO(createdEvent);
     }
 
     public async Task<OutputEventDTO> GetEventByIdAsync(Guid id)
     {
         var ev = await _eventRepository.GetByIdAsync(id);
-        return new OutputEventDTO(ev, DateTime.UtcNow);
+        return new OutputEventDTO(ev);
     }
 
     public async Task UpdateEventAsync(Guid id, InputEventDTO eventDto)

@@ -7,16 +7,19 @@ using EventService.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Host=localhost;Port=5432;Database=EventServiceDb;Username=postgres;Password=postgres";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured");
 
 builder.Services.AddInfrastructure(builder.Configuration, connectionString);
 builder.Services.AddApplication();
 
 // Configure JWT
-var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? "your-secret-key-here";
-var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "UserService";
-var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "EventServiceClient";
+var jwtSecret = builder.Configuration["JwtSettings:Secret"]
+    ?? throw new InvalidOperationException("Configuration value 'JwtSettings:Secret' is not configured");
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"]
+    ?? throw new InvalidOperationException("Configuration value 'JwtSettings:Issuer' is not configured");
+var jwtAudience = builder.Configuration["JwtSettings:Audience"]
+    ?? throw new InvalidOperationException("Configuration value 'JwtSettings:Audience' is not configured");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

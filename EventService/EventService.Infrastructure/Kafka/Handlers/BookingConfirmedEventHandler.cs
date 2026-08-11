@@ -8,6 +8,7 @@ public class BookingConfirmedEventHandler
 {
     private readonly IEventRepository _eventRepository;
     private readonly ILogger<BookingConfirmedEventHandler> _logger;
+    private const int MaxRetries = 3;
 
     public BookingConfirmedEventHandler(IEventRepository eventRepository, ILogger<BookingConfirmedEventHandler> logger)
     {
@@ -21,24 +22,32 @@ public class BookingConfirmedEventHandler
         {
             _logger.LogInformation($"Processing BookingConfirmed event for event {{{@event.EventGuid}}}, seats: {@event.SeatsBooked}");
 
-            var domainEvent = await _eventRepository.GetByIdAsync(@event.EventGuid);
-            if (domainEvent == null)
+            for (var attempt = 1; attempt <= MaxRetries; attempt++)
             {
-                _logger.LogWarning($"Event {{{@event.EventGuid}}} not found, skipping seats reduction");
-                return;
+                var domainEvent = await _eventRepository.GetByIdAsync(@event.EventGuid);
+
+                if (domainEvent.AvailableSeats < @event.SeatsBooked)
+                {
+                    _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats. Available: {domainEvent.AvailableSeats}, requested: {@event.SeatsBooked}");
+                    return;
+                }
+
+                domainEvent.TryReserveSeats(@event.SeatsBooked);
+
+                try
+                {
+                    await _eventRepository.TryReserveSeatsAsync(domainEvent);
+                    _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
+                    return;
+                }
+                catch (InvalidOperationException)
+                {
+                    _logger.LogWarning($"Concurrency conflict while reserving seats for event {{{@event.EventGuid}}}, attempt {attempt}/{MaxRetries}");
+                }
             }
 
-            // Уменьшаем доступные места
-            if (domainEvent.AvailableSeats >= @event.SeatsBooked)
-            {
-                domainEvent.TryReserveSeats(@event.SeatsBooked);
-                await _eventRepository.UpdateAsync(domainEvent);
-                _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
-            }
-            else
-            {
-                _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats. Available: {domainEvent.AvailableSeats}, requested: {@event.SeatsBooked}");
-            }
+            _logger.LogError($"Failed to reserve seats for event {{{@event.EventGuid}}} after {MaxRetries} attempts due to concurrency conflicts");
+            throw new InvalidOperationException($"Failed to reserve seats for event {@event.EventGuid} after {MaxRetries} attempts");
         }
         catch (Exception ex)
         {

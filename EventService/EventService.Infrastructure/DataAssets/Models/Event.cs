@@ -27,7 +27,7 @@ namespace EventService.Infrastructure.DataAssets.Models
 
         public DomainEvent ConvertToDomainEvent()
         {
-            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, CreatedByUserId, Description);
+            var domainEvent = DomainEvent.Create(Id, Title, StartAt, EndAt, TotalSeats, CreatedByUserId, Description, Timestamp, CreatedAt, UpdatedAt);
 
             return domainEvent;
         }

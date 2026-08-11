@@ -29,7 +29,7 @@ namespace EventService.Application.DTOs
             UpdatedAt = updatedAt;
         }
 
-        public OutputEventDTO(DomainEvent _event, DateTime createdAt, DateTime? updatedAt = null)
+        public OutputEventDTO(DomainEvent _event)
         {
             Id = _event.Id;
             Title = _event.Title;
@@ -39,8 +39,8 @@ namespace EventService.Application.DTOs
             TotalSeats = _event.TotalSeats;
             AvailableSeats = _event.AvailableSeats;
             CreatedByUserId = _event.CreatedByUserId;
-            CreatedAt = createdAt;
-            UpdatedAt = updatedAt;
+            CreatedAt = _event.CreatedAt;
+            UpdatedAt = _event.UpdatedAt;
         }
     }
 }
