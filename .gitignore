@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ARCHITECTURE.md
+/MIGRATION_PLAN.md
+/PROJECT_STATUS.md
+/QUICKSTART.md
+/REQUIREMENTS_PLAN.md
+/SUMMARY.md
