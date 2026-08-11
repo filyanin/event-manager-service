@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Элементы решения/">
+    <File Path="example.yml" />
+  </Folder>
   <Project Path="../Shared/Shared.Contracts/Shared.Contracts.csproj" />
   <Project Path="EventService.Application/EventService.Application.csproj" />
   <Project Path="EventService.Domain/EventService.Domain.csproj" />

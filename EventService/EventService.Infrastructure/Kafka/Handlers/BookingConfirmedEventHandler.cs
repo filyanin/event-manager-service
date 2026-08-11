@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Shared.Contracts.Events.Booking;
 using EventService.Application.Interfaces;
+using EventService.Domain.Models;
 
 namespace EventService.Infrastructure.Kafka.Handlers;
 
@@ -18,41 +19,44 @@ public class BookingConfirmedEventHandler
 
     public async Task HandleAsync(BookingConfirmedEvent @event)
     {
-        try
+        _logger.LogInformation($"Processing BookingConfirmed event for booking {{{@event.BookingId}}}, event {{{@event.EventGuid}}}, seats: {@event.SeatsBooked}");
+
+        for (var attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            _logger.LogInformation($"Processing BookingConfirmed event for event {{{@event.EventGuid}}}, seats: {@event.SeatsBooked}");
-
-            for (var attempt = 1; attempt <= MaxRetries; attempt++)
+            DomainEvent domainEvent;
+            try
             {
-                var domainEvent = await _eventRepository.GetByIdAsync(@event.EventGuid);
-
-                if (domainEvent.AvailableSeats < @event.SeatsBooked)
-                {
-                    _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats. Available: {domainEvent.AvailableSeats}, requested: {@event.SeatsBooked}");
-                    return;
-                }
-
-                domainEvent.TryReserveSeats(@event.SeatsBooked);
-
-                try
-                {
-                    await _eventRepository.TryReserveSeatsAsync(domainEvent);
-                    _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
-                    return;
-                }
-                catch (InvalidOperationException)
-                {
-                    _logger.LogWarning($"Concurrency conflict while reserving seats for event {{{@event.EventGuid}}}, attempt {attempt}/{MaxRetries}");
-                }
+                domainEvent = await _eventRepository.GetByIdAsync(@event.EventGuid);
+            }
+            catch (KeyNotFoundException)
+            {
+                // Событие не найдено (например, было удалено) — пропускаем сообщение с логированием,
+                // чтобы не «ронять» подписчик на одном плохом сообщении.
+                _logger.LogWarning($"Event {{{@event.EventGuid}}} not found for BookingConfirmed message (booking {{{@event.BookingId}}}). Skipping message.");
+                return;
             }
 
-            _logger.LogError($"Failed to reserve seats for event {{{@event.EventGuid}}} after {MaxRetries} attempts due to concurrency conflicts");
-            throw new InvalidOperationException($"Failed to reserve seats for event {@event.EventGuid} after {MaxRetries} attempts");
+            if (domainEvent.AvailableSeats < @event.SeatsBooked)
+            {
+                _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats. Available: {domainEvent.AvailableSeats}, requested: {@event.SeatsBooked}. Skipping message.");
+                return;
+            }
+
+            domainEvent.TryReserveSeats(@event.SeatsBooked);
+
+            try
+            {
+                await _eventRepository.TryReserveSeatsAsync(domainEvent);
+                _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                _logger.LogWarning($"Concurrency conflict while reserving seats for event {{{@event.EventGuid}}}, attempt {attempt}/{MaxRetries}");
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error handling BookingConfirmed event: {ex.Message}. Stack trace: {ex.StackTrace}");
-            throw;
-        }
+
+        _logger.LogError($"Failed to reserve seats for event {{{@event.EventGuid}}} after {MaxRetries} attempts due to concurrency conflicts");
+        throw new InvalidOperationException($"Failed to reserve seats for event {@event.EventGuid} after {MaxRetries} attempts");
     }
 }

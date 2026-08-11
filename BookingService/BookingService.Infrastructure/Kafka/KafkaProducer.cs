@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace BookingService.Infrastructure.Kafka;
 
-public class KafkaProducer : IKafkaProducer
+public class KafkaProducer : IKafkaProducer, IDisposable
 {
     private readonly IProducer<string, string> _producer;
     private readonly ILogger<KafkaProducer> _logger;
@@ -46,12 +46,19 @@ public class KafkaProducer : IKafkaProducer
                 Value = json
             });
 
-            _logger.LogInformation($"Event published to topic '{topic}' at partition {result.Partition.Value}, offset {result.Offset.Value}");
+            _logger.LogInformation("Event published to topic '{Topic}' at partition {Partition}, offset {Offset}", topic, result.Partition.Value, result.Offset.Value);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error publishing message to Kafka topic '{topic}': {ex.Message}");
+            _logger.LogError(ex, "Error publishing message to Kafka topic '{Topic}'", topic);
             throw;
         }
+    }
+
+    public void Dispose()
+    {
+        _producer.Flush(TimeSpan.FromSeconds(10));
+        _producer.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

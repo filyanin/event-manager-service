@@ -3,6 +3,7 @@ namespace Shared.Contracts.Topics;
 public static class KafkaTopics
 {
     // Booking события
+    public const string BookingCreated = "booking-created";
     public const string BookingConfirmed = "booking-confirmed";
     public const string BookingCancelled = "booking-cancelled";
     public const string BookingExpired = "booking-expired";

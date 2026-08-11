@@ -50,18 +50,24 @@ public class BookingExpiredEvent : IntegrationEvent
     }
 }
 
-public class BookingConfirmedEvent : IntegrationEvent
+/// <summary>
+/// Неизменяемый контракт события подтверждения брони.
+/// Публикуется BookingService и потребляется EventService по топику <see cref="Topics.KafkaTopics.BookingConfirmed"/>.
+/// </summary>
+public sealed class BookingConfirmedEvent : IntegrationEvent
 {
-    public Guid BookingId { get; set; }
-    public Guid EventGuid { get; set; }
-    public int SeatsBooked { get; set; }
+    public Guid BookingId { get; }
+    public Guid EventGuid { get; }
+    public Guid UserGuid { get; }
+    public int SeatsBooked { get; }
+    public DateTime ConfirmedAt { get; }
 
-    public BookingConfirmedEvent() { }
-
-    public BookingConfirmedEvent(Guid bookingId, Guid eventGuid, int seatsBooked) : base(bookingId)
+    public BookingConfirmedEvent(Guid bookingId, Guid eventGuid, Guid userGuid, int seatsBooked, DateTime confirmedAt) : base(bookingId)
     {
         BookingId = bookingId;
         EventGuid = eventGuid;
+        UserGuid = userGuid;
         SeatsBooked = seatsBooked;
+        ConfirmedAt = confirmedAt;
     }
 }

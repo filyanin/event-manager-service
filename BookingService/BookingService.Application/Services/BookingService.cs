@@ -37,6 +37,18 @@ public class BookingService : IBookingService
 
         var result = await _bookingRepository.CreateAsync(booking);
 
+        try
+        {
+            var @event = new BookingCreatedEvent(result.Id, result.UserGuid, result.EventGuid, result.SeatsBooked);
+            await _kafkaProducer.PublishAsync(KafkaTopics.BookingCreated, result.EventGuid.ToString(), @event);
+            _logger.LogInformation("BookingCreated event published for booking {BookingId}", result.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish BookingCreated event for booking {BookingId}", result.Id);
+            throw;
+        }
+
         return MapToDTO(result);
     }
 
@@ -77,13 +89,13 @@ public class BookingService : IBookingService
         // Публикуем событие в Kafka
         try
         {
-            var @event = new BookingConfirmedEvent(booking.Id, booking.EventGuid, booking.SeatsBooked);
-            await _kafkaProducer.PublishAsync(KafkaTopics.BookingConfirmed, booking.Id.ToString(), @event);
-            _logger.LogInformation($"BookingConfirmed event published for booking {{{booking.Id}}}");
+            var @event = new BookingConfirmedEvent(booking.Id, booking.EventGuid, booking.UserGuid, booking.SeatsBooked, booking.ProcessedAt ?? DateTime.UtcNow);
+            await _kafkaProducer.PublishAsync(KafkaTopics.BookingConfirmed, booking.EventGuid.ToString(), @event);
+            _logger.LogInformation("BookingConfirmed event published for booking {BookingId}", booking.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Failed to publish BookingConfirmed event: {ex.Message}");
+            _logger.LogError(ex, "Failed to publish BookingConfirmed event for booking {BookingId}", booking.Id);
             throw;
         }
     }
@@ -97,7 +109,9 @@ public class BookingService : IBookingService
 
         booking.SetBookingRejected(DateTime.UtcNow);
         await _bookingRepository.ChangeBookingStateAsync(booking);
-    }    public async Task CancelBookingAsync(Guid bookingId, Guid userGuid)
+    }
+
+    public async Task CancelBookingAsync(Guid bookingId, Guid userGuid)
     {
         var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
@@ -109,6 +123,18 @@ public class BookingService : IBookingService
 
         booking.SetBookingCancelled(DateTime.UtcNow);
         await _bookingRepository.ChangeBookingStateAsync(booking);
+
+        try
+        {
+            var @event = new BookingCancelledEvent(booking.Id, booking.EventGuid, booking.SeatsBooked);
+            await _kafkaProducer.PublishAsync(KafkaTopics.BookingCancelled, booking.EventGuid.ToString(), @event);
+            _logger.LogInformation("BookingCancelled event published for booking {BookingId}", booking.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish BookingCancelled event for booking {BookingId}", booking.Id);
+            throw;
+        }
     }
 
     public async Task<int> GetActiveBookingsCountAsync(Guid userGuid)

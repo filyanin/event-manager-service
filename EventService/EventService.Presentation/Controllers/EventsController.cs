@@ -79,10 +79,11 @@ public class EventsController : ControllerBase
     /// <param name="eventDto">Данные события</param>
     /// <returns>Созданное событие</returns>
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "admin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<OutputEventDTO>> CreateEvent([FromBody] InputEventDTO eventDto)
     {
         if (eventDto == null)
@@ -110,10 +111,11 @@ public class EventsController : ControllerBase
     /// <param name="eventDto">Новые данные события</param>
     /// <returns>Статус обновления</returns>
     [HttpPut("{id}")]
-    [Authorize]
+    [Authorize(Roles = "admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] InputEventDTO eventDto)
     {
@@ -145,9 +147,10 @@ public class EventsController : ControllerBase
     /// <param name="id">ID события</param>
     /// <returns>Статус удаления</returns>
     [HttpDelete("{id}")]
-    [Authorize]
+    [Authorize(Roles = "admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteEvent(Guid id)
     {

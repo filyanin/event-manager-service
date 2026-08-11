@@ -98,7 +98,10 @@ public class BookingsController : ControllerBase
     /// <param name="status">Статус бронирования</param>
     /// <returns>Список бронирований с указанным статусом</returns>
     [HttpGet("status/{status}")]
+    [Authorize(Roles = "admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<BookingDTO>>> GetBookingsByStatus(BookingStatus status)
     {
         var bookings = await _bookingService.GetBookingByStatusAsync(status);
