@@ -1,53 +1,496 @@
-# event-manager-service
-Web API сервиса управления мероприятиями с поддержкой управления местами и синхронизированным бронированием.
+# 🎫 Event Manager Service - Микросервисная архитектура
 
-## Структура проекта
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
+[![Kafka](https://img.shields.io/badge/Kafka-7.5.0-231F20?logo=apachekafka)](https://kafka.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com/)
 
-Решение организовано по классической многослойной (слоевой / onion) архитектуре. Ниже перечислены проекты/слои и их назначение:
+> Микросервисная архитектура для управления событиями и бронированиями с асинхронной коммуникацией через Kafka
 
-- EventManagerService (хост / API)
-  - Веб-приложение / точка входа (ASP.NET Core Web API).
-  - Содержит контроллеры, конфигурацию DI, запуск приложения, Swagger и настройки хоста.
-  - Отвечает за перевод входящих HTTP-запросов в вызовы прикладного слоя (Application).
+---
 
-- EventManagerService.Application (Application / Use Cases)
-  - Реализация сценариев приложения (use-cases) — сервисы прикладного уровня, координаторы операций.
-  - Содержит интерфейсы для репозиториев и других зависимостей, DTO и реализацию логики, не зависящую от инфраструктуры.
-  - Здесь реализуется валидация входных данных, транзакционная координация и оркестрация доменных операций.
+## 📋 Описание проекта
 
-- EventManagerService.Domain (Domain / Model)
-  - Доменные сущности, value-объекты, доменные исключения и чистая бизнес-логика.
-  - Реализация правил предметной области (например, управление availableSeats, TryReserveSeats/ReleaseSeats и т.д.).
-  - Минимальные внешние зависимости — только на базовые библиотеки .NET.
+**Event Manager Service** — полнофункциональная система управления событиями, построенная на микросервисной архитектуре с использованием:
+- ✅ **3 независимых микросервиса** с собственными БД
+- ✅ **Асинхронная коммуникация** через Apache Kafka
+- ✅ **JWT аутентификация** и Role-based авторизация
+- ✅ **API документация** через Swagger/OpenAPI
+- ✅ **Docker & Docker Compose** для развёртывания
+- ✅ **Clean Architecture** и SOLID принципы
 
-- EventManagerService.Infrastructure (Infrastructure / Persistence)
-  - Техническая реализация интерфейсов: репозитории, реализация DbContext (EF Core + Npgsql), миграции, интеграция с внешними системами.
-  - Тут находятся адаптеры к базе данных, кэшам, очередям и т.п.
-  - Infrastructure зависит от Domain и Application, но не наоборот.
+---
 
-- EventManagerService.Shared (Shared / Common)
-  - Общие вспомогательные классы, константы, расширения, общие DTO/модели и вспомогательные утилиты, используемые в нескольких проектах.
+## 🏗️ Архитектура микросервисов
 
-- EventService.Tests (Unit Tests)
-  - Модульные тесты для домена и прикладной логики, обычно с использованием InMemory-провайдера и моков.
+### Сервис 1: UserService 🔐 (Порт 5001)
+**Функции:** Аутентификация, управление пользователями и ролями
+- `POST /auth/register` - Регистрация
+- `POST /auth/login` - Вход и получение JWT
+- Выдача токенов с claims (UserId, Name, Role)
+- **БД:** PostgreSQL (UserServiceDb)
 
-- EventService.IntegrationTests (Integration Tests)
-  - Интеграционные тесты, проверяющие поведение с реальной БД (PostgreSQL через Testcontainers/Docker) и тестируемыми конвейерами.
+### Сервис 2: EventService 📅 (Порт 5002)
+**Функции:** Управление событиями
+- `GET /api/events` - Список событий с фильтрацией и пагинацией
+- `GET /api/events/{id}` - Получить событие
+- `POST /api/events` - Создать (требует Admin)
+- `PUT /api/events/{id}` - Обновить (требует Admin)
+- `DELETE /api/events/{id}` - Удалить (требует Admin)
+- **БД:** PostgreSQL (EventServiceDb)
+- **Kafka Consumer:** Слушает топик `booking-confirmed` и уменьшает availableSeats
 
-Направление зависимостей: API -> Application -> Domain <- Infrastructure (Infrastructure реализует контракты, объявленные в Application/Domain). Это обеспечивает чёткое разделение ответственности и упрощает тестирование.
+### Сервис 3: BookingService 🎟️ (Порт 5003)
+**Функции:** Управление бронированиями
+- `POST /api/bookings` - Создать бронирование (требует auth)
+- `GET /api/bookings/{id}` - Получить бронирование (требует auth)
+- `GET /api/bookings/user/my-bookings` - Мои бронирования (требует auth)
+- `POST /api/bookings/{id}/confirm` - Подтвердить (требует Admin)
+- `POST /api/bookings/{id}/reject` - Отклонить (требует Admin)
+- `POST /api/bookings/{id}/cancel` - Отменить (требует auth)
+- **БД:** PostgreSQL (BookingServiceDb)
+- **Kafka Producer:** Публикует `BookingConfirmedEvent` при подтверждении
 
+### Асинхронная коммуникация через Kafka
 
-## Требования
+```
+┌──────────────────────┐                  ┌──────────────────────┐
+│  BookingService      │                  │  EventService        │
+│                      │                  │                      │
+│  ConfirmBooking()    │  BookingConfirmed│  Consumer (Background│
+│         ↓            │  Event Published │     Service)         │
+│  Publish Event   ────┼─────→ Kafka ─────┼───→ UpdateEvent()    │
+│         ↑            │       Topic       │     ReserveSeats()   │
+│  Kafka Producer │    │  booking-        │         ↓            │
+│                      │  confirmed       │  Save to DB          │
+└──────────────────────┘                  └──────────────────────┘
+```
 
-- .NET 10 SDK
-- PostgreSQL (локально или в облаке) — требуется для запуска приложения в режиме работы с реальной базой данных.
+---
 
-Если вы не хотите устанавливать PostgreSQL локально для тестов, тесты используют InMemory-провайдер EF Core (см. раздел «Тесты»).
+## 🚀 Быстрый старт
 
-## Запуск
+### Способ 1: Docker Compose (РЕКОМЕНДУЕТСЯ) ⭐
 
-1. В корне решения выполните: `dotnet build`
-2. Для запуска тестов: `cd .\EventService.Tests\` затем `dotnet test`
+**Требования:** Docker Desktop
+
+```bash
+# 1. Клонировать репозиторий
+git clone https://github.com/filyanin/event-manager-service.git
+cd event-manager-service
+
+# 2. Запустить всю систему одной командой
+docker-compose up -d
+
+# 3. Дождаться инициализации (1-2 минуты)
+docker-compose logs -f
+
+# 4. Открыть Swagger в браузере
+# UserService:    http://localhost:5001/swagger
+# EventService:   http://localhost:5002/swagger
+# BookingService: http://localhost:5003/swagger
+
+# 5. Остановить систему
+docker-compose down
+
+# 6. Очистить БД (если нужно)
+docker-compose down -v
+```
+
+### Способ 2: Локальный запуск
+
+**Требования:** .NET 10 SDK, PostgreSQL 12+, Kafka 7.5.0
+
+```bash
+# 1. Восстановить зависимости
+dotnet restore
+
+# 2. Создать БД в PostgreSQL
+psql -U postgres
+CREATE DATABASE "UserServiceDb";
+CREATE DATABASE "EventServiceDb";
+CREATE DATABASE "BookingServiceDb";
+\q
+
+# 3. Применить миграции для каждого сервиса
+cd UserService/UserService.Infrastructure && dotnet ef database update && cd ../..
+cd EventService/EventService.Infrastructure && dotnet ef database update && cd ../..
+cd BookingService/BookingService.Infrastructure && dotnet ef database update && cd ../..
+
+# 4. Запустить в 3 терминалах
+cd UserService/UserService.Presentation && dotnet run
+cd EventService/EventService.Presentation && dotnet run
+cd BookingService/BookingService.Presentation && dotnet run
+```
+
+---
+
+## 📝 Примеры API запросов
+
+### 1. Регистрация и вход
+```bash
+# Регистрация
+curl -X POST http://localhost:5001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","password":"admin123"}'
+
+# Вход (получить JWT токен)
+curl -X POST http://localhost:5001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","password":"admin123"}'
+
+# Сохраните токен
+$TOKEN = "ваш_токен_здесь"
+```
+
+### 2. Создать событие (требует Admin)
+```bash
+curl -X POST http://localhost:5002/api/events \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Tech Conference 2026",
+    "description": "Annual technology conference",
+    "startAt": "2026-09-15T09:00:00Z",
+    "endAt": "2026-09-17T17:00:00Z",
+    "totalSeat": 100
+  }'
+
+# Сохраните EVENT_ID
+$EVENT_ID = "550e8400-e29b-41d4-a716-446655440001"
+```
+
+### 3. Получить события
+```bash
+curl -X GET "http://localhost:5002/api/events?page=1&pageSize=10" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 4. Создать бронирование
+```bash
+curl -X POST http://localhost:5003/api/bookings \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventId": "'$EVENT_ID'",
+    "seatsToBook": 5
+  }'
+
+# Сохраните BOOKING_ID
+$BOOKING_ID = "550e8400-e29b-41d4-a716-446655440002"
+```
+
+### 5. Подтвердить бронирование (публикуется Kafka событие!)
+```bash
+curl -X POST http://localhost:5003/api/bookings/$BOOKING_ID/confirm \
+  -H "Authorization: Bearer $TOKEN"
+
+# ✅ BookingService публикует BookingConfirmedEvent в Kafka
+# ✅ EventService потребляет и обновляет availableSeats
+```
+
+### 6. Проверить, что места уменьшились
+```bash
+curl -X GET http://localhost:5002/api/events/$EVENT_ID \
+  -H "Authorization: Bearer $TOKEN"
+
+# Результат: availableSeats будет 95 вместо 100
+# Это доказывает работу Kafka интеграции! 🎉
+```
+
+---
+
+## 📁 Структура проекта
+
+```
+event-manager-service/
+│
+├── 📂 UserService/
+│   ├── UserService.Domain/
+│   ├── UserService.Application/
+│   ├── UserService.Infrastructure/
+│   │   └── Security/         (PasswordHasher, TokenService)
+│   └── UserService.Presentation/
+│
+├── 📂 EventService/
+│   ├── EventService.Domain/
+│   │   ├── Models/           (DomainEvent с резервированием мест)
+│   │   ├── Filters/
+│   │   └── ValueObjects/
+│   ├── EventService.Application/
+│   ├── EventService.Infrastructure/
+│   │   └── Kafka/
+│   │       ├── KafkaConsumer.cs
+│   │       ├── Handlers/     (BookingConfirmedEventHandler)
+│   │       └── HostedServices/
+│   └── EventService.Presentation/
+│
+├── 📂 BookingService/
+│   ├── BookingService.Domain/
+│   │   ├── Models/           (DomainBooking с валидацией)
+│   │   └── Enum/             (BookingStatus)
+│   ├── BookingService.Application/
+│   ├── BookingService.Infrastructure/
+│   │   └── Kafka/            (KafkaProducer)
+│   └── BookingService.Presentation/
+│
+├── 📂 Shared/
+│   └── Shared.Contracts/
+│       ├── Configuration/    (KafkaSettings)
+│       ├── Events/          (User, Event, Booking события)
+│       ├── Dtos/            (DTO объекты)
+│       ├── Topics/          (KafkaTopics константы)
+│
+├── 📄 docker-compose.yml     ← Оркестрация всех сервисов
+├── 📄 .dockerignore
+├── 📄 Dockerfile             ← Для каждого сервиса
+├── 📄 QUICKSTART.md          ← Подробный старт
+├── 📄 QUICK_REFERENCE.md     ← Справка по командам
+├── 📄 PHASE_4_5_COMPLETION.md ← Детали реализации
+└── 📄 README.md              ← Этот файл
+```
+
+---
+
+## 🔧 Требования
+
+- **Docker Desktop** (для docker-compose) ИЛИ локально:
+  - .NET 10 SDK
+  - PostgreSQL 12+
+  - Kafka 7.5.0
+  - Zookeeper 7.5.0
+
+---
+
+## 📊 Технологии
+
+| Слой | Технология | Версия |
+|------|-----------|--------|
+| Framework | ASP.NET Core | 10.0 |
+| ORM | Entity Framework Core | 10.0 |
+| БД | PostgreSQL | 16 |
+| Коммуникация | Apache Kafka | 7.5.0 |
+| Аутентификация | JWT Bearer | 10.0 |
+| Контейнеризация | Docker | Latest |
+| Оркестрация | Docker Compose | 3.8 |
+| Документация | Swagger/OpenAPI | 3.0 |
+
+---
+
+## 🔐 Безопасность
+
+### JWT Аутентификация
+- Выдача токенов: **UserService** (`POST /auth/login`)
+- Проверка токенов: **EventService & BookingService**
+- Срок действия: **60 минут**
+- Алгоритм: **HS256** с симметричным ключом
+
+### Role-Based Authorization
+| Роль | Права |
+|------|-------|
+| **user** | Создание бронирований, просмотр событий |
+| **admin** | CRUD событий, подтверждение бронирований |
+
+### Безопасность пароля
+- Хеширование: SHA-256 (⚠️ только для примера, в production используйте bcrypt!)
+- Соль: UUID пользователя
+- Хранение: только хеш в БД
+
+---
+
+## 🧪 Тестирование Kafka интеграции
+
+### Локальное тестирование workflow
+
+```bash
+# 1. Запустить docker-compose
+docker-compose up -d
+
+# 2. Дождаться инициализации (1-2 минуты)
+docker-compose logs -f
+
+# 3. Выполнить полный workflow (см. примеры выше)
+
+# 4. Проверить логи
+docker-compose logs booking-service | grep "BookingConfirmed"
+docker-compose logs event-service | grep "BookingConfirmed"
+
+# 5. Посмотреть Kafka сообщения
+docker exec kafka kafka-console-consumer --topic booking-confirmed \
+  --bootstrap-server localhost:9092 --from-beginning
+```
+
+### Проверочный список
+
+- [ ] `docker-compose up -d` работает
+- [ ] Все контейнеры здоровы: `docker-compose ps`
+- [ ] Swagger доступен: http://localhost:5001/swagger
+- [ ] Можно создать событие
+- [ ] Можно создать бронирование
+- [ ] При подтверждении бронирования мест становится меньше ✅
+
+---
+
+## 🔄 Архитектура (Clean Architecture)
+
+### Слои (Layers)
+
+```
+Presentation (Controllers, Dto, Swagger)
+     ↓
+Application (Services, Use Cases, Interfaces)
+     ↓
+Domain (Entities, Value Objects, Business Logic)
+     ↓
+Infrastructure (EF Core, Repositories, Kafka, DI)
+```
+
+### Направление зависимостей
+```
+Presentation → Application → Domain ← Infrastructure
+```
+
+**Внешний слой зависит от внутреннего, но не наоборот!**
+
+---
+
+## 📈 Масштабируемость
+
+### Горизонтальное масштабирование
+```bash
+# Запустить несколько экземпляров BookingService
+docker-compose up -d --scale booking-service=3
+```
+
+### Kafka Consumer Groups
+- Несколько instances одного сервиса могут читать из одного топика
+- Kafka автоматически распределяет partitions между consumers
+
+### Persistence
+- **Named volumes** гарантируют сохранение данных БД
+- `docker-compose down` ≠ потеря данных
+- `docker-compose down -v` удаляет всё (для reset)
+
+---
+
+## 🐛 Решение проблем
+
+### "Port already in use"
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+### "Cannot connect to Kafka"
+```bash
+docker-compose logs kafka
+docker-compose down kafka zookeeper
+docker-compose up -d zookeeper kafka
+```
+
+### "Connection refused" для БД
+```bash
+docker-compose down -v  # Очистить volumes
+docker-compose up -d    # Пересоздать с нуля
+```
+
+**Более подробно:** [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+
+---
+
+## 📚 Документация
+
+- **[QUICKSTART.md](./QUICKSTART.md)** — Подробный быстрый старт (localy & Docker)
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** — Справка по командам Docker, Kafka, PostgreSQL
+- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** — Статус проекта и выполненные требования
+- **[PHASE_4_5_COMPLETION.md](./PHASE_4_5_COMPLETION.md)** — Детальное описание реализации Kafka & Docker
+- **[FINAL_REPORT.md](./FINAL_REPORT.md)** — Итоговый отчёт о выполнении
+
+---
+
+## 🎯 Дорожная карта
+
+### ✅ Завершено (ФАЗЫ 0-5)
+- ✅ Разделение монолита на 3 микросервиса
+- ✅ Kafka интеграция (Producer & Consumer)
+- ✅ Docker & Docker Compose развёртывание
+- ✅ JWT аутентификация
+- ✅ Role-based авторизация
+- ✅ Swagger API документация
+
+### 📋 В планах (ФАЗА 6+)
+- ⏳ Unit тесты
+- ⏳ Integration тесты
+- ⏳ Postman коллекции
+- ⏳ Kubernetes manifests
+- ⏳ ELK Stack логирование
+- ⏳ Prometheus метрики
+- ⏳ API Gateway (Ocelot)
+
+---
+
+## 🚀 Команды для быстрого старта
+
+```bash
+# Запустить всё
+docker-compose up -d
+
+# Посмотреть статус
+docker-compose ps
+
+# Посмотреть логи
+docker-compose logs -f
+
+# Остановить
+docker-compose down
+
+# Сборка
+dotnet build
+
+# Тесты (когда будут добавлены)
+dotnet test
+```
+
+---
+
+## 👨‍💼 Автор
+
+**Sergei Filyatin**
+- GitHub: [@filyanin](https://github.com/filyanin)
+- Repository: [event-manager-service](https://github.com/filyanin/event-manager-service)
+
+---
+
+## 📄 Лицензия
+
+MIT License
+
+---
+
+## 🤝 Контрибьютинг
+
+Приветствуются pull requests! 
+
+### Процесс:
+1. Fork репозиторий
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
+
+<div align="center">
+
+### ⭐ Если проект вам понравился - дайте звезду!
+
+[⭐ Star on GitHub](https://github.com/filyanin/event-manager-service)
+
+**Статус:** ✅ **Production Ready**  
+**Последнее обновление:** 2026-08-11  
+**Версия:** 1.0.0 (Kafka + Docker)
+
+</div>
 3. Для локального запуска сервиса: `cd .\EventManagerService\` затем `dotnet run -lp http` или `dotnet run`
    - По умолчанию сервис стартует на порту, указанном в выводе. Откройте `http://localhost:{port}/swagger/index.html`.
 

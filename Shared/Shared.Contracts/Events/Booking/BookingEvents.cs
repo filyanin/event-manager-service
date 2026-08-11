@@ -49,3 +49,19 @@ public class BookingExpiredEvent : IntegrationEvent
         SeatsReleased = seatsReleased;
     }
 }
+
+public class BookingConfirmedEvent : IntegrationEvent
+{
+    public Guid BookingId { get; set; }
+    public Guid EventGuid { get; set; }
+    public int SeatsBooked { get; set; }
+
+    public BookingConfirmedEvent() { }
+
+    public BookingConfirmedEvent(Guid bookingId, Guid eventGuid, int seatsBooked) : base(bookingId)
+    {
+        BookingId = bookingId;
+        EventGuid = eventGuid;
+        SeatsBooked = seatsBooked;
+    }
+}

@@ -10,12 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Host=localhost;Port=5432;Database=EventServiceDb;Username=postgres;Password=postgres";
 
-builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddInfrastructure(builder.Configuration, connectionString);
 builder.Services.AddApplication();
 
 // Configure JWT
 var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? "your-secret-key-here";
-var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "EventService";
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "UserService";
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "EventServiceClient";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

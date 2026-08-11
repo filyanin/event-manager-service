@@ -2,17 +2,25 @@ using BookingService.Application.DTOs;
 using BookingService.Application.Interfaces;
 using BookingService.Domain.Enum;
 using BookingService.Domain.Models;
+using Shared.Contracts.Events.Booking;
+using Shared.Contracts.Topics;
+using BookingService.Infrastructure.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace BookingService.Application.Services;
 
 public class BookingService : IBookingService
 {
     private readonly IBookingRepository _bookingRepository;
+    private readonly IKafkaProducer _kafkaProducer;
+    private readonly ILogger<BookingService> _logger;
     private const int MaxActiveBookings = 10;
 
-    public BookingService(IBookingRepository bookingRepository)
+    public BookingService(IBookingRepository bookingRepository, IKafkaProducer kafkaProducer, ILogger<BookingService> logger)
     {
         _bookingRepository = bookingRepository ?? throw new ArgumentNullException(nameof(bookingRepository));
+        _kafkaProducer = kafkaProducer ?? throw new ArgumentNullException(nameof(kafkaProducer));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<BookingDTO> CreateBookingAsync(Guid eventGuid, Guid userGuid, int seatsToBook = 1)
@@ -65,6 +73,19 @@ public class BookingService : IBookingService
 
         booking.SetBookingConfirmed(DateTime.UtcNow);
         await _bookingRepository.ChangeBookingStateAsync(booking);
+
+        // Публикуем событие в Kafka
+        try
+        {
+            var @event = new BookingConfirmedEvent(booking.Id, booking.EventGuid, booking.SeatsBooked);
+            await _kafkaProducer.PublishAsync(KafkaTopics.BookingConfirmed, booking.Id.ToString(), @event);
+            _logger.LogInformation($"BookingConfirmed event published for booking {{{booking.Id}}}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to publish BookingConfirmed event: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task RejectBookingAsync(Guid bookingId)
@@ -76,9 +97,7 @@ public class BookingService : IBookingService
 
         booking.SetBookingRejected(DateTime.UtcNow);
         await _bookingRepository.ChangeBookingStateAsync(booking);
-    }
-
-    public async Task CancelBookingAsync(Guid bookingId, Guid userGuid)
+    }    public async Task CancelBookingAsync(Guid bookingId, Guid userGuid)
     {
         var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
