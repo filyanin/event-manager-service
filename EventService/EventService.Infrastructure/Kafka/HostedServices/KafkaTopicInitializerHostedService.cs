@@ -20,7 +20,8 @@ public class KafkaTopicInitializerHostedService : IHostedService
 
     private static readonly string[] TopicsToEnsure =
     {
-        KafkaTopics.BookingConfirmed
+        KafkaTopics.BookingConfirmed,
+        KafkaTopics.BookingCancelled
     };
 
     public KafkaTopicInitializerHostedService(IOptions<KafkaSettings> settings, ILogger<KafkaTopicInitializerHostedService> logger)

@@ -71,6 +71,19 @@ namespace EventService.Infrastructure.DataAssets.Migrations
                     b.ToTable("Events", (string)null);
                 });
 
+            modelBuilder.Entity("EventService.Infrastructure.DataAssets.Models.ProcessedBookingCancellation", b =>
+                {
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("BookingId");
+
+                    b.ToTable("ProcessedBookingCancellations", (string)null);
+                });
+
             modelBuilder.Entity("EventService.Infrastructure.DataAssets.Models.ProcessedBookingConfirmation", b =>
                 {
                     b.Property<Guid>("BookingId")

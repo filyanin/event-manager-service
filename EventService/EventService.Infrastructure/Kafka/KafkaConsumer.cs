@@ -20,10 +20,18 @@ public class KafkaConsumer<T> : IKafkaConsumer<T>, IDisposable
     {
         var kafkaSettings = settings.Value;
 
+        // Каждый тип сообщения потребляется отдельным подписчиком на свой топик. Участники одной
+        // Kafka consumer group обязаны иметь одинаковую подписку на топики — если несколько
+        // независимых консьюмеров с разными топиками используют общий GroupId, координатор группы
+        // видит рассинхронизированные подписки, что приводит к бесконечным ребалансировкам и в
+        // результате часть консьюмеров может вообще не получать назначенных партиций. Поэтому
+        // формируем уникальный GroupId для каждого типа события на основе базового значения из конфигурации.
+        var groupId = $"{kafkaSettings.GroupId}-{typeof(T).Name}";
+
         var config = new ConsumerConfig
         {
             BootstrapServers = kafkaSettings.BootstrapServers,
-            GroupId = kafkaSettings.GroupId,
+            GroupId = groupId,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             SessionTimeoutMs = kafkaSettings.SessionTimeoutMs,
             HeartbeatIntervalMs = kafkaSettings.HeartbeatIntervalMs,

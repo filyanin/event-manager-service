@@ -198,4 +198,55 @@ public class EventRepository : IEventRepository
 
         return true;
     }
+
+    public async Task<bool> ReleaseSeatsIdempotentAsync(Guid bookingId, Guid eventId, int seatsToRelease)
+    {
+        // Помечаем bookingId как обработанный до возврата мест: уникальный первичный ключ
+        // ProcessedBookingCancellations гарантирует, что повторная доставка (или дублирование)
+        // того же сообщения BookingCancelled не приведёт к повторному увеличению доступных мест.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        _context.ProcessedBookingCancellations.Add(new ProcessedBookingCancellation
+        {
+            BookingId = bookingId,
+            ProcessedAt = DateTime.UtcNow
+        });
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Booking с таким Id уже был обработан ранее — сообщение является дубликатом.
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {eventId} not found");
+
+        if (model.AvailableSeats + seatsToRelease > model.TotalSeats)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("TooManySeatsToRelease");
+        }
+
+        model.AvailableSeats += seatsToRelease;
+        model.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("SeatsReleaseConcurrencyException");
+        }
+
+        return true;
+    }
 }

@@ -13,6 +13,8 @@ namespace EventService.Infrastructure.DataAssets
 
         public DbSet<ProcessedBookingConfirmation> ProcessedBookingConfirmations => Set<ProcessedBookingConfirmation>();
 
+        public DbSet<ProcessedBookingCancellation> ProcessedBookingCancellations => Set<ProcessedBookingCancellation>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

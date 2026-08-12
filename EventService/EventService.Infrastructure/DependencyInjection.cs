@@ -26,9 +26,11 @@ public static class DependencyInjection
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddScoped(typeof(IKafkaConsumer<>), typeof(KafkaConsumer<>));
         services.AddScoped<BookingConfirmedEventHandler>();
+        services.AddScoped<BookingCancelledEventHandler>();
         // Порядок регистрации важен: инициализатор топика должен успеть отработать до старта подписчика.
         services.AddHostedService<KafkaTopicInitializerHostedService>();
         services.AddHostedService<BookingConfirmedConsumerHostedService>();
+        services.AddHostedService<BookingCancelledConsumerHostedService>();
 
         return services;
     }

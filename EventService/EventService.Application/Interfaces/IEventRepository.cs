@@ -31,5 +31,12 @@ namespace EventService.Application.Interfaces
         public Task<bool> TryReserveSeatsIdempotentAsync(Guid bookingId, Guid eventId, int seatsToReserve);
 
         public Task<bool> ReleaseSeatsAsync(DomainEvent @event);
+
+        /// <summary>
+        /// Идемпотентно освобождает места для события в рамках обработки BookingCancelled.
+        /// Если сообщение с данным bookingId уже было обработано ранее, места повторно не возвращаются.
+        /// </summary>
+        /// <returns>true, если места были освобождены; false, если bookingId уже был обработан ранее (дубликат)</returns>
+        public Task<bool> ReleaseSeatsIdempotentAsync(Guid bookingId, Guid eventId, int seatsToRelease);
     }
 }
