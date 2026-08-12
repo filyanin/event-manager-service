@@ -123,6 +123,60 @@ public class EventRepository : IEventRepository
         return true;
     }
 
+    public async Task<bool> TryReserveSeatsIdempotentAsync(Guid bookingId, Guid eventId, int seatsToReserve)
+    {
+        // Помечаем bookingId как обработанный до списания мест: уникальный первичный ключ
+        // ProcessedBookingConfirmations гарантирует, что повторная доставка (или дублирование)
+        // того же сообщения BookingConfirmed не приведёт к повторному уменьшению доступных мест.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        _context.ProcessedBookingConfirmations.Add(new ProcessedBookingConfirmation
+        {
+            BookingId = bookingId,
+            ProcessedAt = DateTime.UtcNow
+        });
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Booking с таким Id уже был обработан ранее — сообщение является дубликатом.
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        // Читаем актуальное состояние события внутри транзакции (а не полагаемся на значение,
+        // прочитанное до начала обработки в вызывающем коде), чтобы конкурентные подтверждения
+        // применяли свою дельту поверх последних сохранённых данных, а не перезаписывали друг друга.
+        var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
+        if (model == null)
+            throw new KeyNotFoundException($"Event {eventId} not found");
+
+        if (model.AvailableSeats < seatsToReserve)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("NotEnoughAvailableSeats");
+        }
+
+        model.AvailableSeats -= seatsToReserve;
+        model.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("SeatsReserveConcurrencyException");
+        }
+
+        return true;
+    }
+
     public async Task<bool> ReleaseSeatsAsync(DomainEvent @event)
     {
         var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);

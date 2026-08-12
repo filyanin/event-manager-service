@@ -39,7 +39,7 @@ namespace EventService.Domain.Models
             Timestamp = timestamp;
         }
 
-        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null, DateTime? createdAt = null, DateTime? updatedAt = null)
+        public static DomainEvent Create(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, Guid createdByUserId, string? description = null, byte[]? timestamp = null, DateTime? createdAt = null, DateTime? updatedAt = null, int? availableSeats = null)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Title is required", nameof(title));
@@ -56,7 +56,7 @@ namespace EventService.Domain.Models
             if (createdByUserId == Guid.Empty)
                 throw new ArgumentException("CreatedByUserId cannot be empty", nameof(createdByUserId));
 
-            return new DomainEvent(id, title, startAt, endAt, totalSeats, totalSeats, createdByUserId, createdAt ?? DateTime.UtcNow, updatedAt, description, timestamp);
+            return new DomainEvent(id, title, startAt, endAt, totalSeats, availableSeats ?? totalSeats, createdByUserId, createdAt ?? DateTime.UtcNow, updatedAt, description, timestamp);
         }
 
         public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string? description = null)

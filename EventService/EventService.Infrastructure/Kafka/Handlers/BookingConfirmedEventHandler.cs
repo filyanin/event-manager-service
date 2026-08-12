@@ -23,10 +23,17 @@ public class BookingConfirmedEventHandler
 
         for (var attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            DomainEvent domainEvent;
             try
             {
-                domainEvent = await _eventRepository.GetByIdAsync(@event.EventGuid);
+                var reserved = await _eventRepository.TryReserveSeatsIdempotentAsync(@event.BookingId, @event.EventGuid, @event.SeatsBooked);
+                if (!reserved)
+                {
+                    _logger.LogInformation($"BookingConfirmed message for booking {{{@event.BookingId}}} was already processed earlier. Skipping duplicate.");
+                    return;
+                }
+
+                _logger.LogInformation($"Event {{{@event.EventGuid}}} updated after reserving {@event.SeatsBooked} seat(s).");
+                return;
             }
             catch (KeyNotFoundException)
             {
@@ -35,19 +42,9 @@ public class BookingConfirmedEventHandler
                 _logger.LogWarning($"Event {{{@event.EventGuid}}} not found for BookingConfirmed message (booking {{{@event.BookingId}}}). Skipping message.");
                 return;
             }
-
-            if (domainEvent.AvailableSeats < @event.SeatsBooked)
+            catch (InvalidOperationException ex) when (ex.Message == "NotEnoughAvailableSeats")
             {
-                _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats. Available: {domainEvent.AvailableSeats}, requested: {@event.SeatsBooked}. Skipping message.");
-                return;
-            }
-
-            domainEvent.TryReserveSeats(@event.SeatsBooked);
-
-            try
-            {
-                await _eventRepository.TryReserveSeatsAsync(domainEvent);
-                _logger.LogInformation($"Event {{{@event.EventGuid}}} updated. Available seats: {domainEvent.AvailableSeats}");
+                _logger.LogWarning($"Event {{{@event.EventGuid}}} does not have enough available seats for booking {{{@event.BookingId}}}, requested: {@event.SeatsBooked}. Skipping message.");
                 return;
             }
             catch (InvalidOperationException)

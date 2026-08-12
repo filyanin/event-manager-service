@@ -1,0 +1,18 @@
+# Локальный override для ручного тестирования через Swagger UI.
+# Автоматически подхватывается docker compose вместе с docker-compose.yml
+# и переключает сервисы в Development, включая доступ к /swagger.
+# Для "боевого" запуска без Swagger используйте:
+#   docker compose -f docker-compose.yml up -d
+
+services:
+  user-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  event-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  booking-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

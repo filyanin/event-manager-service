@@ -20,6 +20,16 @@ namespace EventService.Application.Interfaces
 
         public Task<bool> TryReserveSeatsAsync(DomainEvent @event);
 
+        /// <summary>
+        /// Идемпотентно резервирует места для события в рамках обработки BookingConfirmed.
+        /// Если сообщение с данным bookingId уже было обработано ранее, места повторно не списываются.
+        /// Списание выполняется атомарно относительно актуального состояния события в БД (а не
+        /// относительно значения, прочитанного до начала обработки), чтобы конкурентные подтверждения
+        /// не перезаписывали друг друга.
+        /// </summary>
+        /// <returns>true, если места были зарезервированы; false, если bookingId уже был обработан ранее (дубликат)</returns>
+        public Task<bool> TryReserveSeatsIdempotentAsync(Guid bookingId, Guid eventId, int seatsToReserve);
+
         public Task<bool> ReleaseSeatsAsync(DomainEvent @event);
     }
 }
