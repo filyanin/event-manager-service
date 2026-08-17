@@ -53,6 +53,18 @@ public class EventsController : ControllerBase
     }
 
     /// <summary>
+    /// Получает топ-10 событий с наибольшим процентом проданных мест
+    /// </summary>
+    /// <returns>Список из 10 самых популярных событий</returns>
+    [HttpGet("top")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IList<OutputEventDTO>>> GetTopEvents()
+    {
+        var topEvents = await _eventService.GetTopEventsAsync();
+        return Ok(topEvents);
+    }
+
+    /// <summary>
     /// Получает событие по ID
     /// </summary>
     /// <param name="id">ID события</param>

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shared.Contracts.Events.Booking;
+using Shared.Contracts.Configuration;
 using EventService.Application.Interfaces;
 
 namespace EventService.Infrastructure.Kafka.Handlers;
@@ -7,12 +9,20 @@ namespace EventService.Infrastructure.Kafka.Handlers;
 public class BookingCancelledEventHandler
 {
     private readonly IEventRepository _eventRepository;
+    private readonly ICacheService _cacheService;
+    private readonly RedisSettings _redisSettings;
     private readonly ILogger<BookingCancelledEventHandler> _logger;
     private const int MaxRetries = 3;
 
-    public BookingCancelledEventHandler(IEventRepository eventRepository, ILogger<BookingCancelledEventHandler> logger)
+    public BookingCancelledEventHandler(
+        IEventRepository eventRepository,
+        ICacheService cacheService,
+        IOptions<RedisSettings> redisSettings,
+        ILogger<BookingCancelledEventHandler> logger)
     {
         _eventRepository = eventRepository;
+        _cacheService = cacheService;
+        _redisSettings = redisSettings.Value;
         _logger = logger;
     }
 
@@ -32,6 +42,8 @@ public class BookingCancelledEventHandler
                 }
 
                 _logger.LogInformation($"Event {{{@event.EventGuid}}} updated after releasing {@event.SeatsReleased} seat(s).");
+
+                await _cacheService.RemoveAsync(CacheKeys.Event(_redisSettings.EventKeyPrefix, @event.EventGuid));
                 return;
             }
             catch (KeyNotFoundException)

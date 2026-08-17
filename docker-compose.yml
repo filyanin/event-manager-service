@@ -96,6 +96,16 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis для кеширования данных EventService
+  redis:
+    image: redis:7.2-alpine
+    container_name: eventapi-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # UserService
   user-service:
     build:
@@ -132,6 +142,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Host=postgres-events;Port=5432;Database=EventServiceDb;Username=postgres;Password=postgres"
@@ -143,6 +155,9 @@ services:
       Kafka__GroupId: "event-service-group"
       Kafka__SessionTimeoutMs: "30000"
       Kafka__HeartbeatIntervalMs: "10000"
+      Redis__ConnectionString: "redis:6379"
+      Redis__EventTtlSeconds: "300"
+      Redis__TopEventsTtlSeconds: "60"
     ports:
       - "5002:8080"
     healthcheck:
