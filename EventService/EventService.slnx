@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Элементы решения/" />
+  <Project Path="../Shared/Shared.Contracts/Shared.Contracts.csproj" />
+  <Project Path="EventService.Application/EventService.Application.csproj" />
+  <Project Path="EventService.Domain/EventService.Domain.csproj" />
+  <Project Path="EventService.Infrastructure/EventService.Infrastructure.csproj" />
+  <Project Path="EventService.Presentation/EventService.Presentation.csproj" />
+</Solution>

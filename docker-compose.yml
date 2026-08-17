@@ -1,0 +1,194 @@
+version: '3.8'
+
+services:
+  # Zookeeper для управления Kafka кластером
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: [ "CMD", "echo", "ruok", "|", "nc", "localhost", "2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Kafka message broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:9092" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL для UserService
+  postgres-users:
+    image: postgres:16-alpine
+    container_name: postgres-users
+    environment:
+      POSTGRES_DB: UserServiceDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL для EventService
+  postgres-events:
+    image: postgres:16-alpine
+    container_name: postgres-events
+    environment:
+      POSTGRES_DB: EventServiceDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_events_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL для BookingService
+  postgres-bookings:
+    image: postgres:16-alpine
+    container_name: postgres-bookings
+    environment:
+      POSTGRES_DB: BookingServiceDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_bookings_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # UserService
+  user-service:
+    build:
+      context: .
+      dockerfile: UserService/UserService.Presentation/Dockerfile
+    container_name: user-service
+    depends_on:
+      postgres-users:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres-users;Port=5432;Database=UserServiceDb;Username=postgres;Password=postgres"
+      JwtSettings__Secret: "your-super-secret-key-min-32-chars-long"
+      JwtSettings__Issuer: "UserService"
+      JwtSettings__Audience: "EventManagerServiceClients"
+      JwtSettings__ExpirationMinutes: "60"
+    ports:
+      - "5001:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # EventService
+  event-service:
+    build:
+      context: .
+      dockerfile: EventService/EventService.Presentation/Dockerfile
+    container_name: event-service
+    depends_on:
+      postgres-events:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres-events;Port=5432;Database=EventServiceDb;Username=postgres;Password=postgres"
+      JwtSettings__Secret: "your-super-secret-key-min-32-chars-long"
+      JwtSettings__Issuer: "UserService"
+      JwtSettings__Audience: "EventManagerServiceClients"
+      JwtSettings__ExpirationMinutes: "60"
+      Kafka__BootstrapServers: "kafka:29092"
+      Kafka__GroupId: "event-service-group"
+      Kafka__SessionTimeoutMs: "30000"
+      Kafka__HeartbeatIntervalMs: "10000"
+    ports:
+      - "5002:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # BookingService
+  booking-service:
+    build:
+      context: .
+      dockerfile: BookingService/BookingService.Presentation/Dockerfile
+    container_name: booking-service
+    depends_on:
+      postgres-bookings:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres-bookings;Port=5432;Database=BookingServiceDb;Username=postgres;Password=postgres"
+      JwtSettings__Secret: "your-super-secret-key-min-32-chars-long"
+      JwtSettings__Issuer: "UserService"
+      JwtSettings__Audience: "EventManagerServiceClients"
+      JwtSettings__ExpirationMinutes: "60"
+      Kafka__BootstrapServers: "kafka:29092"
+      Kafka__GroupId: "booking-service-group"
+      Kafka__SessionTimeoutMs: "30000"
+      Kafka__HeartbeatIntervalMs: "10000"
+    ports:
+      - "5003:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_users_data:
+  postgres_events_data:
+  postgres_bookings_data:
+
+networks:
+  default:
+    name: event-manager-network
+    driver: bridge
