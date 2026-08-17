@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using EventService.Domain.Models;
 
 namespace EventService.Application.DTOs
@@ -15,6 +16,7 @@ namespace EventService.Application.DTOs
         public DateTime CreatedAt { get; init; }
         public DateTime? UpdatedAt { get; init; }
 
+        [JsonConstructor]
         public OutputEventDTO(Guid id, string title, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats, Guid createdByUserId, DateTime createdAt, string? description = null, DateTime? updatedAt = null)
         {
             Id = id;
@@ -30,17 +32,8 @@ namespace EventService.Application.DTOs
         }
 
         public OutputEventDTO(DomainEvent _event)
+            : this(_event.Id, _event.Title, _event.StartAt, _event.EndAt, _event.TotalSeats, _event.AvailableSeats, _event.CreatedByUserId, _event.CreatedAt, _event.Description, _event.UpdatedAt)
         {
-            Id = _event.Id;
-            Title = _event.Title;
-            Description = _event.Description;
-            StartAt = _event.StartAt;
-            EndAt = _event.EndAt;
-            TotalSeats = _event.TotalSeats;
-            AvailableSeats = _event.AvailableSeats;
-            CreatedByUserId = _event.CreatedByUserId;
-            CreatedAt = _event.CreatedAt;
-            UpdatedAt = _event.UpdatedAt;
         }
     }
 }
