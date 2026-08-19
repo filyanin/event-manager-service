@@ -39,11 +39,14 @@ public static class DependencyInjection
 
         // Kafka configuration
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
+        services.AddSingleton<IKafkaProducer, KafkaProducer>();
         services.AddScoped(typeof(IKafkaConsumer<>), typeof(KafkaConsumer<>));
+        services.AddScoped<BookingCreatedEventHandler>();
         services.AddScoped<BookingConfirmedEventHandler>();
         services.AddScoped<BookingCancelledEventHandler>();
         // Порядок регистрации важен: инициализатор топика должен успеть отработать до старта подписчика.
         services.AddHostedService<KafkaTopicInitializerHostedService>();
+        services.AddHostedService<BookingCreatedConsumerHostedService>();
         services.AddHostedService<BookingConfirmedConsumerHostedService>();
         services.AddHostedService<BookingCancelledConsumerHostedService>();
 

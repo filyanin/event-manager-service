@@ -122,6 +122,7 @@ services:
       JwtSettings__Issuer: "UserService"
       JwtSettings__Audience: "EventManagerServiceClients"
       JwtSettings__ExpirationMinutes: "60"
+      Otlp__Endpoint: "http://jaeger:4317"
     ports:
       - "5001:8080"
     healthcheck:
@@ -158,6 +159,7 @@ services:
       Redis__ConnectionString: "redis:6379"
       Redis__EventTtlSeconds: "300"
       Redis__TopEventsTtlSeconds: "60"
+      Otlp__Endpoint: "http://jaeger:4317"
     ports:
       - "5002:8080"
     healthcheck:
@@ -189,6 +191,7 @@ services:
       Kafka__GroupId: "booking-service-group"
       Kafka__SessionTimeoutMs: "30000"
       Kafka__HeartbeatIntervalMs: "10000"
+      Otlp__Endpoint: "http://jaeger:4317"
     ports:
       - "5003:8080"
     healthcheck:
@@ -198,10 +201,44 @@ services:
       retries: 3
       start_period: 40s
 
+  # Prometheus для сбора метрик
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: eventapi-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  # Jaeger для сбора трейсов
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: eventapi-jaeger
+    ports:
+      - "16686:16686"   # UI
+      - "4317:4317"     # OTLP gRPC
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  # Grafana для дашбордов
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: eventapi-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_users_data:
   postgres_events_data:
   postgres_bookings_data:
+  grafana-data:
 
 networks:
   default:

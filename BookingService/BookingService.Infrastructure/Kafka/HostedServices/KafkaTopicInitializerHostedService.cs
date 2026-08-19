@@ -6,12 +6,10 @@ using Microsoft.Extensions.Options;
 using Shared.Contracts.Configuration;
 using Shared.Contracts.Topics;
 
-namespace EventService.Infrastructure.Kafka.HostedServices;
+namespace BookingService.Infrastructure.Kafka.HostedServices;
 
 /// <summary>
-/// Гарантирует наличие топика Kafka, на который подписывается EventService, до старта подписчика.
-/// Работает как обычный IHostedService (не BackgroundService): выполняется один раз при старте
-/// приложения и завершается, не блокируя запуск остальных сервисов при ошибке.
+/// Гарантирует наличие топика Kafka, на который подписывается BookingService, до старта подписчика.
 /// </summary>
 public class KafkaTopicInitializerHostedService : IHostedService
 {
@@ -20,9 +18,7 @@ public class KafkaTopicInitializerHostedService : IHostedService
 
     private static readonly string[] TopicsToEnsure =
     {
-        KafkaTopics.BookingCreated,
-        KafkaTopics.BookingConfirmed,
-        KafkaTopics.BookingCancelled
+        KafkaTopics.BookingSeatsRejected
     };
 
     public KafkaTopicInitializerHostedService(IOptions<KafkaSettings> settings, ILogger<KafkaTopicInitializerHostedService> logger)
@@ -77,8 +73,6 @@ public class KafkaTopicInitializerHostedService : IHostedService
         }
         catch (Exception ex)
         {
-            // Не валим запуск приложения, если топик создать не удалось (например, Kafka ещё не поднялась).
-            // Подписчик всё равно попытается подписаться на топик самостоятельно.
             _logger.LogWarning(ex, "Failed to ensure Kafka topics exist. The consumer will attempt to use them anyway.");
         }
     }

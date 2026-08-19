@@ -10,6 +10,7 @@
 - [Эндпоинты API](#эндпоинты-api)
 - [Стратегия кеширования](#стратегия-кеширования)
 - [Инструкция по запуску](#инструкция-по-запуску)
+- [Наблюдаемость (Observability)](#наблюдаемость-observability)
 
 ## Структура проекта
 
@@ -218,6 +219,16 @@ event-manager-service/
 
 Каждый сервис при старте автоматически применяет миграции EF Core (`dbContext.Database.Migrate()`), поэтому отдельного шага не требуется — достаточно, чтобы PostgreSQL был доступен.
 
+Каждый микросервис — независимая единица сборки со своим `.slnx`-файлом (`UserService/UserService.slnx`, `EventService/EventService.slnx`, `BookingService/BookingService.slnx`). Общего решения для всех сервисов намеренно нет, чтобы сохранить их независимость.
+
+Сборка всех сервисов одной командой из корня репозитория:
+
+```powershell
+./build.ps1
+# или для Release-конфигурации
+./build.ps1 -Configuration Release
+```
+
 Запуск через `dotnet run` (из корня репозитория):
 
 ```powershell
@@ -231,7 +242,7 @@ dotnet run --project EventService/EventService.Presentation/EventService.Present
 dotnet run --project BookingService/BookingService.Presentation/BookingService.Presentation.csproj
 ```
 
-Либо через Visual Studio — настройте несколько стартовых проектов (Solution Properties → Startup Project → Multiple startup projects) и запустите решение `BookingService.slnx`.
+Либо через Visual Studio — откройте нужный `.slnx` сервиса (например, `EventService/EventService.slnx`) и запустите его; для одновременного запуска нескольких сервисов откройте их в отдельных экземплярах Visual Studio, либо воспользуйтесь `docker-compose.yml` (см. ниже).
 
 ### 4. Порты по умолчанию (Development)
 
@@ -302,3 +313,64 @@ docker-compose down -v
 > Обратите внимание: порты Docker-контейнеров (5001–5003) отличаются от портов при локальном запуске через `dotnet run` ([раздел 4](#4-порты-по-умолчанию-development)).
 
 Данные PostgreSQL и Kafka сохраняются между перезапусками в именованных volumes (`postgres_users_data`, `postgres_events_data`, `postgres_bookings_data`), все контейнеры работают в общей сети `event-manager-network`.
+
+## Наблюдаемость (Observability)
+
+Во все три сервиса (`UserService`, `EventService`, `BookingService`) подключён стек наблюдаемости на базе **OpenTelemetry**:
+
+- **Трейсинг** — автоматическая инструментация входящих HTTP-запросов (`AddAspNetCoreInstrumentation`), исходящих HTTP-запросов (`AddHttpClientInstrumentation`) и запросов к БД через EF Core (`AddEntityFrameworkCoreInstrumentation`). Трейсы экспортируются по протоколу **OTLP** в **Jaeger**.
+- **Метрики** — метрики ASP.NET Core (latency, throughput, error rate) и метрики рантайма .NET (GC, thread pool) собираются через `AddAspNetCoreInstrumentation()` и `AddRuntimeInstrumentation()`, экспортируются в формате **Prometheus** через эндпоинт `/metrics` (`AddPrometheusExporter()` + `app.MapPrometheusScrapingEndpoint()`).
+- **Логирование** — структурированные логи в формате **JSON** через **Serilog** (`CompactJsonFormatter`), выводятся в консоль контейнера.
+- Имя сервиса-ресурса (`service.name`) задаётся через `ConfigureResource(r => r.AddService(...))`: `events-service`, `bookings-service`, `users-service` — соответственно для EventService, BookingService, UserService.
+
+### Компоненты стека
+
+| Инструмент | Назначение | UI / порт |
+|---|---|---|
+| **Prometheus** | Сбор и хранение метрик (scrape `/metrics` каждого сервиса раз в 15с, конфиг — [`prometheus.yml`](prometheus.yml)) | http://localhost:9090 |
+| **Jaeger** | Приём и визуализация распределённых трейсов (OTLP gRPC на 4317) | http://localhost:16686 |
+| **Grafana** | Дашборды с метриками latency/throughput/error rate; источник данных Prometheus и дашборд подключены через provisioning ([`grafana/provisioning`](grafana/provisioning)) | http://localhost:3000 (admin / admin) |
+
+### Конфигурация в appsettings.json
+
+```json
+{
+  "Otlp": {
+    "Endpoint": "http://localhost:4317"
+  },
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    }
+  }
+}
+```
+
+В Docker Compose OTLP endpoint переопределяется переменной окружения `Otlp__Endpoint=http://jaeger:4317`, так как внутри сети Docker Jaeger доступен по имени контейнера.
+
+### Запуск стека наблюдаемости
+
+Стек поднимается вместе с остальной инфраструктурой одной командой из корня репозитория:
+
+```powershell
+docker-compose up -d
+```
+
+После запуска доступны:
+
+- Prometheus — http://localhost:9090 (раздел **Status → Targets** покажет статус скрейпинга всех трёх сервисов);
+- Jaeger UI — http://localhost:16686 (в выпадающем списке **Service** появятся `events-service`, `bookings-service`, `users-service`);
+- Grafana — http://localhost:3000 (логин `admin`, пароль `admin`); источник данных Prometheus и дашборд `Event Manager Service - Observability` подключаются автоматически через provisioning, без ручной настройки.
+
+### Проверка (Stage 8)
+
+1. `GET http://localhost:<порт сервиса>/metrics` должен вернуть данные в текстовом формате Prometheus.
+2. В Jaeger UI (http://localhost:16686) должны появляться трейсы с корректным именем сервиса и спанами HTTP/SQL-запросов.
+3. В Prometheus (**Status → Targets**) все три задания (`events-service`, `bookings-service`, `users-service`) должны быть в состоянии `UP`.
+4. Дашборд в Grafana должен отображать данные по latency, throughput, error rate и активным запросам.
+
+JSON дашборда сохранён в репозитории: [`grafana/provisioning/dashboards/event-manager-dashboard.json`](grafana/provisioning/dashboards/event-manager-dashboard.json).

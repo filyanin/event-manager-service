@@ -8,6 +8,8 @@ public static class KafkaTopics
     public const string BookingCancelled = "booking-cancelled";
     public const string BookingExpired = "booking-expired";
 
+    public const string BookingSeatsRejected = "booking-seats-rejected";
+
     // Event события
     public const string EventCreated = "event-created";
     public const string EventDeleted = "event-deleted";
