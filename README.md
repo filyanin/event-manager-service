@@ -219,6 +219,16 @@ event-manager-service/
 
 Каждый сервис при старте автоматически применяет миграции EF Core (`dbContext.Database.Migrate()`), поэтому отдельного шага не требуется — достаточно, чтобы PostgreSQL был доступен.
 
+Каждый микросервис — независимая единица сборки со своим `.slnx`-файлом (`UserService/UserService.slnx`, `EventService/EventService.slnx`, `BookingService/BookingService.slnx`). Общего решения для всех сервисов намеренно нет, чтобы сохранить их независимость.
+
+Сборка всех сервисов одной командой из корня репозитория:
+
+```powershell
+./build.ps1
+# или для Release-конфигурации
+./build.ps1 -Configuration Release
+```
+
 Запуск через `dotnet run` (из корня репозитория):
 
 ```powershell
@@ -232,7 +242,7 @@ dotnet run --project EventService/EventService.Presentation/EventService.Present
 dotnet run --project BookingService/BookingService.Presentation/BookingService.Presentation.csproj
 ```
 
-Либо через Visual Studio — настройте несколько стартовых проектов (Solution Properties → Startup Project → Multiple startup projects) и запустите решение `BookingService.slnx`.
+Либо через Visual Studio — откройте нужный `.slnx` сервиса (например, `EventService/EventService.slnx`) и запустите его; для одновременного запуска нескольких сервисов откройте их в отдельных экземплярах Visual Studio, либо воспользуйтесь `docker-compose.yml` (см. ниже).
 
 ### 4. Порты по умолчанию (Development)
 
