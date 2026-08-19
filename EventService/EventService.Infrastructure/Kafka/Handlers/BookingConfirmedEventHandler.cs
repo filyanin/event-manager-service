@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shared.Contracts.Events.Booking;
+using Shared.Contracts.Configuration;
 using EventService.Application.Interfaces;
 using EventService.Domain.Models;
 
@@ -8,12 +10,20 @@ namespace EventService.Infrastructure.Kafka.Handlers;
 public class BookingConfirmedEventHandler
 {
     private readonly IEventRepository _eventRepository;
+    private readonly ICacheService _cacheService;
+    private readonly RedisSettings _redisSettings;
     private readonly ILogger<BookingConfirmedEventHandler> _logger;
     private const int MaxRetries = 3;
 
-    public BookingConfirmedEventHandler(IEventRepository eventRepository, ILogger<BookingConfirmedEventHandler> logger)
+    public BookingConfirmedEventHandler(
+        IEventRepository eventRepository,
+        ICacheService cacheService,
+        IOptions<RedisSettings> redisSettings,
+        ILogger<BookingConfirmedEventHandler> logger)
     {
         _eventRepository = eventRepository;
+        _cacheService = cacheService;
+        _redisSettings = redisSettings.Value;
         _logger = logger;
     }
 
@@ -33,6 +43,10 @@ public class BookingConfirmedEventHandler
                 }
 
                 _logger.LogInformation($"Event {{{@event.EventGuid}}} updated after reserving {@event.SeatsBooked} seat(s).");
+
+                // Данные о доступных местах события изменились в БД — инвалидируем кеш,
+                // чтобы следующее чтение прогрело его актуальными данными.
+                await _cacheService.RemoveAsync(CacheKeys.Event(_redisSettings.EventKeyPrefix, @event.EventGuid));
                 return;
             }
             catch (KeyNotFoundException)

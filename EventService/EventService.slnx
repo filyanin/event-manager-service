@@ -5,4 +5,5 @@
   <Project Path="EventService.Domain/EventService.Domain.csproj" />
   <Project Path="EventService.Infrastructure/EventService.Infrastructure.csproj" />
   <Project Path="EventService.Presentation/EventService.Presentation.csproj" />
+  <Project Path="EventService.Tests/EventService.Tests.csproj" />
 </Solution>

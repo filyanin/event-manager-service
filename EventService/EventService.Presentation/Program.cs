@@ -43,32 +43,30 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
     {
         Title = "EventService API",
         Version = "v1"
     });
 
-    var jwtSecurityScheme = new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    var jwtSecurityScheme = new Microsoft.OpenApi.OpenApiSecurityScheme
     {
         Scheme = "bearer",
         BearerFormat = "JWT",
         Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Description = "Введите JWT токен в формате: Bearer {your token}",
-        Reference = new Microsoft.OpenApi.Models.OpenApiReference
-        {
-            Id = JwtBearerDefaults.AuthenticationScheme,
-            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme
-        }
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Description = "Введите JWT токен в формате: Bearer {your token}"
     };
 
-    options.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, jwtSecurityScheme);
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    var jwtSecuritySchemeReference = new Microsoft.OpenApi.OpenApiSecuritySchemeReference(
+        JwtBearerDefaults.AuthenticationScheme, null);
+
+    options.AddSecurityRequirement(_ => new Microsoft.OpenApi.OpenApiSecurityRequirement
     {
-        { jwtSecurityScheme, Array.Empty<string>() }
+        { jwtSecuritySchemeReference, new List<string>() }
     });
 });
 

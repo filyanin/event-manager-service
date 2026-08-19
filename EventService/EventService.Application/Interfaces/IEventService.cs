@@ -9,6 +9,11 @@ namespace EventService.Application.Interfaces
 
         public Task<OutputEventDTO> GetEventByIdAsync(Guid id);
 
+        /// <summary>
+        /// Возвращает топ-10 событий с наибольшим процентом проданных мест.
+        /// </summary>
+        public Task<IList<OutputEventDTO>> GetTopEventsAsync();
+
         public Task<OutputEventDTO> AddEventAsync(InputEventDTO eventDto, Guid userId);
 
         public Task UpdateEventAsync(Guid id, InputEventDTO eventDTO);

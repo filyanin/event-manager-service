@@ -14,6 +14,12 @@ namespace EventService.Application.Interfaces
 
         public Task<DomainEvent> GetByIdAsync(Guid id);
 
+        /// <summary>
+        /// Возвращает топ событий, отсортированных по убыванию процента проданных мест:
+        /// (TotalSeats - AvailableSeats) / TotalSeats.
+        /// </summary>
+        public Task<IList<DomainEvent>> GetTopEventsAsync(int count);
+
         public Task UpdateAsync(DomainEvent domainEvent);
 
         public Task<bool> ExistsAsync(Guid id);

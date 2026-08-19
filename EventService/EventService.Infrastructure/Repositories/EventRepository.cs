@@ -84,6 +84,17 @@ public class EventRepository : IEventRepository
         return model.ConvertToDomainEvent();
     }
 
+    public async Task<IList<DomainEvent>> GetTopEventsAsync(int count)
+    {
+        var items = await _context.Events
+            .Where(e => e.TotalSeats > 0)
+            .OrderByDescending(e => ((double)(e.TotalSeats - e.AvailableSeats)) / e.TotalSeats)
+            .Take(count)
+            .ToListAsync();
+
+        return items.Select(i => i.ConvertToDomainEvent()).ToList();
+    }
+
     public async Task UpdateAsync(DomainEvent domainEvent)
     {
         var model = await _context.Events.FirstOrDefaultAsync(e => e.Id == domainEvent.Id);

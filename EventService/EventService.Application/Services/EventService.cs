@@ -3,16 +3,31 @@ using EventService.Application.Interfaces;
 using EventService.Domain.Filters;
 using EventService.Domain.Models;
 using EventService.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Shared.Contracts.Configuration;
 
 namespace EventService.Application.Services;
 
 public class EventService : IEventService
 {
     private readonly IEventRepository _eventRepository;
+    private readonly ICacheService _cacheService;
+    private readonly RedisSettings _redisSettings;
+    private readonly ILogger<EventService> _logger;
 
-    public EventService(IEventRepository eventRepository)
+    private const int TopEventsCount = 10;
+
+    public EventService(
+        IEventRepository eventRepository,
+        ICacheService cacheService,
+        IOptions<RedisSettings> redisSettings,
+        ILogger<EventService> logger)
     {
         _eventRepository = eventRepository ?? throw new ArgumentNullException(nameof(eventRepository));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+        _redisSettings = redisSettings?.Value ?? throw new ArgumentNullException(nameof(redisSettings));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<(IList<OutputEventDTO> Items, int Total)> GetAllEventAsync(EventsFilters filters, int page, int pageSize)
@@ -50,8 +65,36 @@ public class EventService : IEventService
 
     public async Task<OutputEventDTO> GetEventByIdAsync(Guid id)
     {
+        var cacheKey = CacheKeys.Event(_redisSettings.EventKeyPrefix, id);
+        var cached = await _cacheService.GetAsync<OutputEventDTO>(cacheKey);
+        if (cached != null)
+        {
+            return cached;
+        }
+
         var ev = await _eventRepository.GetByIdAsync(id);
-        return new OutputEventDTO(ev);
+        var dto = new OutputEventDTO(ev);
+
+        await _cacheService.SetAsync(cacheKey, dto, TimeSpan.FromSeconds(_redisSettings.EventTtlSeconds));
+
+        return dto;
+    }
+
+    public async Task<IList<OutputEventDTO>> GetTopEventsAsync()
+    {
+        var cacheKey = _redisSettings.TopEventsKey;
+        var cached = await _cacheService.GetAsync<IList<OutputEventDTO>>(cacheKey);
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        var topEvents = await _eventRepository.GetTopEventsAsync(TopEventsCount);
+        var dtos = topEvents.Select(e => new OutputEventDTO(e)).ToList();
+
+        await _cacheService.SetAsync<IList<OutputEventDTO>>(cacheKey, dtos, TimeSpan.FromSeconds(_redisSettings.TopEventsTtlSeconds));
+
+        return dtos;
     }
 
     public async Task UpdateEventAsync(Guid id, InputEventDTO eventDto)
@@ -69,6 +112,10 @@ public class EventService : IEventService
         existingEvent.UpdateEvent(eventDto.Title, eventDto.StartAt.Value, eventDto.EndAt.Value, eventDto.Description);
 
         await _eventRepository.UpdateAsync(existingEvent);
+
+        // Сначала сохраняем в базу, затем инвалидируем кеш, чтобы при сбое между шагами
+        // база оставалась источником истины, а кеш просто прогрелся заново при следующем чтении.
+        await _cacheService.RemoveAsync(CacheKeys.Event(_redisSettings.EventKeyPrefix, id));
     }
 
     public async Task<bool> ExistsAsync(Guid id)
@@ -82,5 +129,7 @@ public class EventService : IEventService
             throw new InvalidOperationException($"Event with id {id} not found");
 
         await _eventRepository.DeleteAsync(id);
+
+        await _cacheService.RemoveAsync(CacheKeys.Event(_redisSettings.EventKeyPrefix, id));
     }
 }
