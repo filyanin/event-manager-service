@@ -54,6 +54,27 @@ public class BookingExpiredEvent : IntegrationEvent
 /// Неизменяемый контракт события подтверждения брони.
 /// Публикуется BookingService и потребляется EventService по топику <see cref="Topics.KafkaTopics.BookingConfirmed"/>.
 /// </summary>
+/// <summary>
+/// Публикуется EventService, когда для брони не хватило свободных мест.
+/// Потребляется BookingService по топику <see cref="Topics.KafkaTopics.BookingSeatsRejected"/>
+/// для перевода брони в статус Rejected без прямого обращения к EventService.
+/// </summary>
+public class BookingSeatsRejectedEvent : IntegrationEvent
+{
+    public Guid BookingId { get; set; }
+    public Guid EventGuid { get; set; }
+    public string Reason { get; set; } = string.Empty;
+
+    public BookingSeatsRejectedEvent() { }
+
+    public BookingSeatsRejectedEvent(Guid bookingId, Guid eventGuid, string reason) : base(bookingId)
+    {
+        BookingId = bookingId;
+        EventGuid = eventGuid;
+        Reason = reason;
+    }
+}
+
 public sealed class BookingConfirmedEvent : IntegrationEvent
 {
     public Guid BookingId { get; }
